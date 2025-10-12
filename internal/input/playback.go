@@ -297,8 +297,7 @@ func AdvancePlayback(m *model.Model) {
 			}
 
 			// Mark that at least one track reached a cell boundary
-			anyTrackAtCellBoundary = true
-			log.Printf("CELL_BOUNDARY: Song track %d: ticks exhausted, advancing (anyTrackAtCellBoundary=true)", track)
+			log.Printf("CELL_BOUNDARY: Song track %d: ticks exhausted, advancing (checking if song row changes)", track)
 
 			// Check for queued stop action at cell boundary
 			if m.SongPlaybackQueued[track] == -1 {
@@ -309,12 +308,25 @@ func AdvancePlayback(m *model.Model) {
 				continue
 			}
 
+			// Remember the song row before advancing
+			oldSongRow := m.SongPlaybackRow[track]
+
 			// Now advance to next playable row for this track
 			if !advanceToNextPlayableRowForTrack(m, track) {
 				// Track finished, deactivate
 				m.SongPlaybackActive[track] = false
 				log.Printf("Song track %d deactivated (end of sequence)", track)
 				continue
+			}
+
+			// Check if we advanced to a new song row (new chain)
+			newSongRow := m.SongPlaybackRow[track]
+			if newSongRow != oldSongRow {
+				// Track advanced to a new song row - this is a song-level cell boundary
+				anyTrackAtCellBoundary = true
+				log.Printf("SONG_CELL_BOUNDARY: Song track %d advanced from song row %02X to %02X (anyTrackAtCellBoundary=true)", track, oldSongRow, newSongRow)
+			} else {
+				log.Printf("Song track %d advanced within chain (song row %02X unchanged)", track, oldSongRow)
 			}
 
 			// Load new ticks for the advanced row
