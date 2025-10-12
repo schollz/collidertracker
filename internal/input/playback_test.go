@@ -9,7 +9,7 @@ import (
 )
 
 func TestToggleSingleTrackPlayback_JumpCells(t *testing.T) {
-	// Test the "jump" functionality: pressing Space on a playing track but different cell
+	// Test the "jump" functionality: pressing Space on a playing track but different cell.
 	
 	t.Run("Jump from one cell to another when track is playing", func(t *testing.T) {
 		m := model.NewModel(0, "test.json", false)
@@ -19,7 +19,7 @@ func TestToggleSingleTrackPlayback_JumpCells(t *testing.T) {
 		m.SongData[0][2] = 0 // Track 0, Row 2, Chain 0
 		m.SongData[0][5] = 1 // Track 0, Row 5, Chain 1
 		
-		// Track 0 is sampler by default (TrackTypes[0] = true)
+		// Track 0 uses sampler chains and phrases by default
 		// Set up sampler chains with valid phrases
 		m.SamplerChainsData[0][0] = 0  // Chain 0 has phrase 0
 		m.SamplerChainsData[1][0] = 1  // Chain 1 has phrase 1
@@ -117,7 +117,7 @@ func TestToggleSingleTrackPlayback_JumpCells(t *testing.T) {
 		
 		// Set up song data with chain at row 2 only
 		m.SongData[0][2] = 0 // Track 0, Row 2, Chain 0
-		// Row 5 is empty (default -1)
+		// m.SongData[0][5] is empty (contains default -1)
 		m.SamplerChainsData[0][0] = 0
 		m.SamplerPhrasesData[0][0][types.ColDeltaTime] = 4
 		
