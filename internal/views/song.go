@@ -73,6 +73,10 @@ func RenderSongView(m *model.Model) string {
 						if m.SongPlaybackActive[track] && m.SongPlaybackRow[track] == row {
 							trackQueued = true
 						}
+						// For jump: also show blinking arrow on the jump target row
+						if m.SongPlaybackQueuedRow[track] >= 0 && m.SongPlaybackQueuedRow[track] == row {
+							trackQueued = true
+						}
 					}
 				}
 				chainID := m.SongData[track][row]
