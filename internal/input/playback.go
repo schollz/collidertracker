@@ -216,7 +216,7 @@ func ToggleSingleTrackPlayback(m *model.Model) tea.Cmd {
 			// Other tracks are playing - queue start at next cell boundary
 			m.SongPlaybackQueued[track] = 1
 			m.SongPlaybackQueuedRow[track] = songRow // Store the row to start from
-			log.Printf("Queued track %d to start at next cell boundary from row %02X", track, songRow)
+			log.Printf("QUEUE_DEBUG: Queued track %d to start at next cell boundary from row %02X (other tracks playing)", track, songRow)
 		} else {
 			// No other tracks playing - start immediately
 			// Initialize playback if not already running
@@ -298,7 +298,7 @@ func AdvancePlayback(m *model.Model) {
 
 			// Mark that at least one track reached a cell boundary
 			anyTrackAtCellBoundary = true
-			log.Printf("Song track %d: ticks exhausted, advancing", track)
+			log.Printf("CELL_BOUNDARY: Song track %d: ticks exhausted, advancing (anyTrackAtCellBoundary=true)", track)
 
 			// Check for queued stop action at cell boundary
 			if m.SongPlaybackQueued[track] == -1 {
@@ -331,6 +331,7 @@ func AdvancePlayback(m *model.Model) {
 		log.Printf("Song playback: processed %d active tracks", activeTrackCount)
 
 		// Process queued start actions ONLY at cell boundaries (when at least one track advanced)
+		log.Printf("QUEUE_CHECK: anyTrackAtCellBoundary=%v, checking queued starts", anyTrackAtCellBoundary)
 		if anyTrackAtCellBoundary {
 			for track := 0; track < 8; track++ {
 				if m.SongPlaybackQueued[track] == 1 && !m.SongPlaybackActive[track] {
@@ -383,7 +384,7 @@ func AdvancePlayback(m *model.Model) {
 
 				// Emit initial row for this track
 				EmitRowDataFor(m, firstPhraseID, m.SongPlaybackRowInPhrase[track], track)
-				log.Printf("Song track %d started (queued start executed) at row %02X, chain %02X, phrase %02X with %d ticks",
+				log.Printf("QUEUE_EXEC: Song track %d started (queued start executed) at row %02X, chain %02X, phrase %02X with %d ticks",
 					track, songRow, chainID, firstPhraseID, m.SongPlaybackTicksLeft[track])
 			}
 		}
