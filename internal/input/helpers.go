@@ -1557,6 +1557,12 @@ func stopPlayback(m *model.Model) {
 		log.Printf("Stopped file browser playback when stopping tracker playback")
 	}
 
+	// Clear any queued operations for all tracks
+	for track := 0; track < 8; track++ {
+		m.SongPlaybackQueuedRow[track] = -1
+		m.SongPlaybackQueuedStop[track] = false
+	}
+
 	m.SendStopOSC()
 	log.Printf("Playback stopped")
 }

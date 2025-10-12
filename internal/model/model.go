@@ -125,6 +125,9 @@ type Model struct {
 	SongPlaybackPhrase      [8]int  // Current phrase being played for each track
 	SongPlaybackRowInPhrase [8]int  // Current row within phrase for each track
 	SongPlaybackTicksLeft   [8]int  // Remaining ticks until next row advance for each track
+	// Track-specific queuing for spacebar control in song mode
+	SongPlaybackQueuedRow    [8]int  // Queued song row to play next (-1 means no queue)
+	SongPlaybackQueuedStop   [8]bool // Whether to stop the track after current cell finishes
 	// Effect step tracking - tracks how many times each step has been played for Every functionality
 	EffectStepCounter [8][255][255]int // [track][phrase][row] = step count for retrigger and timestretch Every logic
 	// Increment counter tracking - tracks increment counter values per track/phrase/row
@@ -1007,6 +1010,9 @@ func (m *Model) initializeDefaultData() {
 		m.SongPlaybackPhrase[track] = -1
 		m.SongPlaybackRowInPhrase[track] = 0
 		m.SongPlaybackTicksLeft[track] = 0
+		// Initialize queue state
+		m.SongPlaybackQueuedRow[track] = -1
+		m.SongPlaybackQueuedStop[track] = false
 		// Initialize effect step counters to 0
 		for phrase := 0; phrase < 255; phrase++ {
 			for row := 0; row < 255; row++ {

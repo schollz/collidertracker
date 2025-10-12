@@ -1634,6 +1634,13 @@ func handleSpace(m *model.Model) tea.Cmd {
 			storage.AutoSave(m)
 		}
 		return nil
+	} else if m.ViewMode == types.SongView {
+		// Track-specific playback control in song mode
+		// Skip the type row (row -1)
+		if m.CurrentRow >= 0 {
+			return ToggleTrackPlayback(m, m.CurrentCol, m.CurrentRow)
+		}
+		return nil
 	} else if m.ViewMode != types.SettingsView && m.ViewMode != types.FileMetadataView {
 		return TogglePlayback(m)
 	}
