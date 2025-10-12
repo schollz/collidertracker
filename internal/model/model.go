@@ -57,7 +57,7 @@ type Model struct {
 	PlaybackPhrase        int            // Current phrase being played
 	PlaybackMode          types.ViewMode // Whether playback started from Chain or Phrase view
 	ticker                *time.Ticker
-	TickCount             int     // Counter for tick-based animations (blinking indicators)
+	TickCount             int            // Counter for tick-based animations (blinking indicators)
 	LastEditRow           int            // Track the last row that was edited
 	BPM                   float32        // Beats per minute
 	PPQ                   int            // Pulses per quarter note
@@ -771,6 +771,8 @@ func NewModel(oscPort int, saveFolder string, vimMode bool) *Model {
 		m.TrackTypes[i] = true     // Default to Sampler (SA)
 		// Initialize per-track RNG for modulation
 		m.ModulateRngs[i] = rand.New(rand.NewSource(time.Now().UnixNano() + int64(i)))
+		// Initialize queued row to -1 (no target)
+		m.SongPlaybackQueuedRow[i] = -1
 	}
 	m.CurrentMixerRow = 0   // Start on level row
 	m.CurrentMixerTrack = 0 // Default to track 0
