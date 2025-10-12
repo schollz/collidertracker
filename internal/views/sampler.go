@@ -15,8 +15,10 @@ import (
 
 func RenderSamplerPhraseView(m *model.Model) string {
 	// Styles
-	selectedStyle := lipgloss.NewStyle().Background(lipgloss.Color("7")).Foreground(lipgloss.Color("0")) // Lighter background, dark text
+	selectedStyle := lipgloss.NewStyle().Background(lipgloss.Color("7")).Foreground(lipgloss.Color("0"))              // Lighter background, dark text
+	selectedNeverEditedStyle := lipgloss.NewStyle().Background(lipgloss.Color("240")).Foreground(lipgloss.Color("0")) // Darker background for never-edited, dark text
 	normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
+	normalNeverEditedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // Dimmed text for never-edited when not selected
 	sliceStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	sliceDownbeatStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))                          // Lighter gray for downbeats
 	playbackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))                              // Green
@@ -109,21 +111,36 @@ func RenderSamplerPhraseView(m *model.Model) string {
 		}
 
 		// Modulate (MO) - now at position 3
+		moValue := (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColModulate]
 		moText := "--"
-		if (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColModulate] != -1 {
-			moText = fmt.Sprintf("%02X", (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColModulate])
+		if moValue != -1 {
+			moText = fmt.Sprintf("%02X", moValue)
 		}
+		// Check if this modulate setting is still at default values (sampler uses SamplerModulateSettings)
+		moIsDefault := moValue != -1 && m.IsModulateSettingDefault(m.SamplerModulateSettings[moValue])
 		var moCell string
 		if m.CurrentRow == dataIndex && m.CurrentCol == 3 {
-			moCell = selectedStyle.Render(moText)
+			if moIsDefault {
+				moCell = selectedNeverEditedStyle.Render(moText)
+			} else {
+				moCell = selectedStyle.Render(moText)
+			}
 		} else if m.Clipboard.HasData && m.Clipboard.HighlightView == types.PhraseView && m.Clipboard.HighlightPhrase == m.CurrentPhrase && m.Clipboard.HighlightRow == dataIndex {
 			if m.Clipboard.Mode == types.RowMode || (m.Clipboard.Mode == types.CellMode && m.Clipboard.HighlightCol == 3) {
 				moCell = copiedStyle.Render(moText)
 			} else {
-				moCell = normalStyle.Render(moText)
+				if moIsDefault {
+					moCell = normalNeverEditedStyle.Render(moText)
+				} else {
+					moCell = normalStyle.Render(moText)
+				}
 			}
 		} else {
-			moCell = normalStyle.Render(moText)
+			if moIsDefault {
+				moCell = normalNeverEditedStyle.Render(moText)
+			} else {
+				moCell = normalStyle.Render(moText)
+			}
 		}
 
 		// Velocity (VE) - now at position 4
@@ -181,39 +198,69 @@ func RenderSamplerPhraseView(m *model.Model) string {
 		}
 
 		// Retrigger (RT) - now at position 7
+		rtValue := (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColRetrigger]
 		rtText := "--"
-		if (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColRetrigger] != -1 {
-			rtText = fmt.Sprintf("%02X", (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColRetrigger])
+		if rtValue != -1 {
+			rtText = fmt.Sprintf("%02X", rtValue)
 		}
+		// Check if this retrigger setting is still at default values
+		rtIsDefault := rtValue != -1 && m.IsRetriggerSettingDefault(rtValue)
 		var rtCell string
 		if m.CurrentRow == dataIndex && m.CurrentCol == 7 {
-			rtCell = selectedStyle.Render(rtText)
+			if rtIsDefault {
+				rtCell = selectedNeverEditedStyle.Render(rtText)
+			} else {
+				rtCell = selectedStyle.Render(rtText)
+			}
 		} else if m.Clipboard.HasData && m.Clipboard.HighlightView == types.PhraseView && m.Clipboard.HighlightPhrase == m.CurrentPhrase && m.Clipboard.HighlightRow == dataIndex {
 			if m.Clipboard.Mode == types.RowMode || (m.Clipboard.Mode == types.CellMode && m.Clipboard.HighlightCol == 7) {
 				rtCell = copiedStyle.Render(rtText)
 			} else {
-				rtCell = normalStyle.Render(rtText)
+				if rtIsDefault {
+					rtCell = normalNeverEditedStyle.Render(rtText)
+				} else {
+					rtCell = normalStyle.Render(rtText)
+				}
 			}
 		} else {
-			rtCell = normalStyle.Render(rtText)
+			if rtIsDefault {
+				rtCell = normalNeverEditedStyle.Render(rtText)
+			} else {
+				rtCell = normalStyle.Render(rtText)
+			}
 		}
 
 		// Timestretch (TS) - now at position 8
+		tsValue := (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColTimestretch]
 		tsText := "--"
-		if (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColTimestretch] != -1 {
-			tsText = fmt.Sprintf("%02X", (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColTimestretch])
+		if tsValue != -1 {
+			tsText = fmt.Sprintf("%02X", tsValue)
 		}
+		// Check if this timestretch setting is still at default values
+		tsIsDefault := tsValue != -1 && m.IsTimestrechSettingDefault(tsValue)
 		var tsCell string
 		if m.CurrentRow == dataIndex && m.CurrentCol == 8 {
-			tsCell = selectedStyle.Render(tsText)
+			if tsIsDefault {
+				tsCell = selectedNeverEditedStyle.Render(tsText)
+			} else {
+				tsCell = selectedStyle.Render(tsText)
+			}
 		} else if m.Clipboard.HasData && m.Clipboard.HighlightView == types.PhraseView && m.Clipboard.HighlightPhrase == m.CurrentPhrase && m.Clipboard.HighlightRow == dataIndex {
 			if m.Clipboard.Mode == types.RowMode || (m.Clipboard.Mode == types.CellMode && m.Clipboard.HighlightCol == 8) {
 				tsCell = copiedStyle.Render(tsText)
 			} else {
-				tsCell = normalStyle.Render(tsText)
+				if tsIsDefault {
+					tsCell = normalNeverEditedStyle.Render(tsText)
+				} else {
+					tsCell = normalStyle.Render(tsText)
+				}
 			}
 		} else {
-			tsCell = normalStyle.Render(tsText)
+			if tsIsDefault {
+				tsCell = normalNeverEditedStyle.Render(tsText)
+			} else {
+				tsCell = normalStyle.Render(tsText)
+			}
 		}
 
 		// Я (EffectReverse) — hex char: "-", "0" to "F" - now at position 9
@@ -325,21 +372,36 @@ func RenderSamplerPhraseView(m *model.Model) string {
 		}
 
 		// DU (EffectDucking) - now at position 15
+		duckingValue := (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColEffectDucking]
 		duckingText := "--"
-		if (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColEffectDucking] != -1 {
-			duckingText = fmt.Sprintf("%02X", (*phrasesData)[m.CurrentPhrase][dataIndex][types.ColEffectDucking])
+		if duckingValue != -1 {
+			duckingText = fmt.Sprintf("%02X", duckingValue)
 		}
+		// Check if this ducking setting is still at default values
+		duckingIsDefault := duckingValue != -1 && m.IsDuckingSettingDefault(duckingValue)
 		var duckingCell string
 		if m.CurrentRow == dataIndex && m.CurrentCol == 15 {
-			duckingCell = selectedStyle.Render(duckingText)
+			if duckingIsDefault {
+				duckingCell = selectedNeverEditedStyle.Render(duckingText)
+			} else {
+				duckingCell = selectedStyle.Render(duckingText)
+			}
 		} else if m.Clipboard.HasData && m.Clipboard.HighlightView == types.PhraseView && m.Clipboard.HighlightPhrase == m.CurrentPhrase && m.Clipboard.HighlightRow == dataIndex {
 			if m.Clipboard.Mode == types.RowMode || (m.Clipboard.Mode == types.CellMode && m.Clipboard.HighlightCol == 15) {
 				duckingCell = copiedStyle.Render(duckingText)
 			} else {
-				duckingCell = normalStyle.Render(duckingText)
+				if duckingIsDefault {
+					duckingCell = normalNeverEditedStyle.Render(duckingText)
+				} else {
+					duckingCell = normalStyle.Render(duckingText)
+				}
 			}
 		} else {
-			duckingCell = normalStyle.Render(duckingText)
+			if duckingIsDefault {
+				duckingCell = normalNeverEditedStyle.Render(duckingText)
+			} else {
+				duckingCell = normalStyle.Render(duckingText)
+			}
 		}
 
 		// Filename (FI) - first 8 characters - now at position 16

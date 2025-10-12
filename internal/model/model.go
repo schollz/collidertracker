@@ -2274,3 +2274,54 @@ func (m *Model) IsRowCurrentlyPlaying(phrase, row, trackId int) bool {
 		return m.PlaybackPhrase == phrase && m.PlaybackRow == row
 	}
 }
+
+// IsRetriggerSettingDefault checks if a retrigger setting is still at its default value
+func (m *Model) IsRetriggerSettingDefault(index int) bool {
+	if index < 0 || index >= 255 {
+		return true
+	}
+	s := m.RetriggerSettings[index]
+	return s.Times == 0 && s.Start == 0.0 && s.End == 0.0 && s.Beats == 0 &&
+		s.VolumeDB == 0.0 && s.PitchChange == 0.0 &&
+		s.FinalPitchToStart == 0 && s.FinalVolumeToStart == 0 &&
+		s.Every == 1 && s.Probability == 100
+}
+
+// IsTimestrechSettingDefault checks if a timestretch setting is still at its default value
+func (m *Model) IsTimestrechSettingDefault(index int) bool {
+	if index < 0 || index >= 255 {
+		return true
+	}
+	s := m.TimestrechSettings[index]
+	return s.Start == 0.0 && s.End == 0.0 && s.Beats == 0 &&
+		s.Every == 1 && s.Probability == 100
+}
+
+// IsModulateSettingDefault checks if a modulate setting is still at its default value
+func (m *Model) IsModulateSettingDefault(settings types.ModulateSettings) bool {
+	return settings.Seed == -1 && settings.IRandom == 0 &&
+		settings.Sub == 0 && settings.Add == 0 &&
+		settings.Increment == 0 && settings.Wrap == 0 &&
+		settings.ScaleRoot == 0 && settings.Scale == "all" &&
+		settings.Probability == 100
+}
+
+// IsDuckingSettingDefault checks if a ducking setting is still at its default value
+func (m *Model) IsDuckingSettingDefault(index int) bool {
+	if index < 0 || index >= 255 {
+		return true
+	}
+	s := m.DuckingSettings[index]
+	return s.Type == 0 && s.Bus == 0 &&
+		s.Attack == 0.02 && s.Release == 0.2 &&
+		s.Depth == 0.5 && s.Thresh == 0.02
+}
+
+// IsSoundMakerSettingDefault checks if a SoundMaker setting is still at its default value
+func (m *Model) IsSoundMakerSettingDefault(index int) bool {
+	if index < 0 || index >= 255 {
+		return true
+	}
+	s := m.SoundMakerSettings[index]
+	return s.Name == "None" && len(s.Parameters) == 0 && s.PatchName == ""
+}

@@ -15,8 +15,10 @@ import (
 
 func RenderInstrumentPhraseView(m *model.Model) string {
 	// Styles
-	selectedStyle := lipgloss.NewStyle().Background(lipgloss.Color("7")).Foreground(lipgloss.Color("0")) // Lighter background, dark text
-	normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)                      // White text for normal cells
+	selectedStyle := lipgloss.NewStyle().Background(lipgloss.Color("7")).Foreground(lipgloss.Color("0"))          // Lighter background, dark text
+	selectedDefaultStyle := lipgloss.NewStyle().Background(lipgloss.Color("240")).Foreground(lipgloss.Color("0")) // Darker background for default pool values, dark text
+	normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)                                // White text for normal cells
+	normalDefaultStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Bold(true)                          // Dimmed text for default pool values when not selected
 	sliceStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	sliceDownbeatStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))                          // Lighter gray for downbeats
 	playbackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))                              // Green
@@ -188,18 +190,32 @@ func RenderInstrumentPhraseView(m *model.Model) string {
 		if modulateValue != -1 {
 			modulateText = fmt.Sprintf("%02X", modulateValue)
 		}
+		// Check if this modulate setting is still at default values (instrument uses InstrumentModulateSettings)
+		moIsDefault := modulateValue != -1 && m.IsModulateSettingDefault(m.InstrumentModulateSettings[modulateValue])
 
 		var modulateCell string
 		if m.CurrentRow == dataIndex && m.CurrentCol == int(types.InstrumentColMO) { // Column 3 is the MO column
-			modulateCell = selectedStyle.Render(fmt.Sprintf("%2s", modulateText))
+			if moIsDefault {
+				modulateCell = selectedDefaultStyle.Render(fmt.Sprintf("%2s", modulateText))
+			} else {
+				modulateCell = selectedStyle.Render(fmt.Sprintf("%2s", modulateText))
+			}
 		} else if m.Clipboard.HasData && m.Clipboard.HighlightView == types.PhraseView && m.Clipboard.HighlightPhrase == m.CurrentPhrase && m.Clipboard.HighlightRow == dataIndex {
 			if m.Clipboard.Mode == types.RowMode || (m.Clipboard.Mode == types.CellMode && m.Clipboard.HighlightCol == int(types.InstrumentColMO)) {
 				modulateCell = copiedStyle.Render(fmt.Sprintf("%2s", modulateText))
 			} else {
-				modulateCell = normalStyle.Render(fmt.Sprintf("%2s", modulateText))
+				if moIsDefault {
+					modulateCell = normalDefaultStyle.Render(fmt.Sprintf("%2s", modulateText))
+				} else {
+					modulateCell = normalStyle.Render(fmt.Sprintf("%2s", modulateText))
+				}
 			}
 		} else {
-			modulateCell = normalStyle.Render(fmt.Sprintf("%2s", modulateText))
+			if moIsDefault {
+				modulateCell = normalDefaultStyle.Render(fmt.Sprintf("%2s", modulateText))
+			} else {
+				modulateCell = normalStyle.Render(fmt.Sprintf("%2s", modulateText))
+			}
 		}
 
 		// Chord (C) - display chord type
@@ -550,18 +566,32 @@ func RenderInstrumentPhraseView(m *model.Model) string {
 		if somiValue != -1 {
 			somiText = fmt.Sprintf("%02X", somiValue)
 		}
+		// Check if this SoundMaker setting is still at default values (only check for SO mode, not MIDI)
+		soIsDefault := m.SOColumnMode == types.SOModeSound && somiValue != -1 && m.IsSoundMakerSettingDefault(somiValue)
 
 		var somiCell string
 		if m.CurrentRow == dataIndex && m.CurrentCol == int(types.InstrumentColSOMI) { // Column 19 is the SO/MI column
-			somiCell = selectedStyle.Render(fmt.Sprintf("%2s", somiText))
+			if soIsDefault {
+				somiCell = selectedDefaultStyle.Render(fmt.Sprintf("%2s", somiText))
+			} else {
+				somiCell = selectedStyle.Render(fmt.Sprintf("%2s", somiText))
+			}
 		} else if m.Clipboard.HasData && m.Clipboard.HighlightView == types.PhraseView && m.Clipboard.HighlightPhrase == m.CurrentPhrase && m.Clipboard.HighlightRow == dataIndex {
 			if m.Clipboard.Mode == types.RowMode || (m.Clipboard.Mode == types.CellMode && m.Clipboard.HighlightCol == int(types.InstrumentColSOMI)) {
 				somiCell = copiedStyle.Render(fmt.Sprintf("%2s", somiText))
 			} else {
-				somiCell = normalStyle.Render(fmt.Sprintf("%2s", somiText))
+				if soIsDefault {
+					somiCell = normalDefaultStyle.Render(fmt.Sprintf("%2s", somiText))
+				} else {
+					somiCell = normalStyle.Render(fmt.Sprintf("%2s", somiText))
+				}
 			}
 		} else {
-			somiCell = normalStyle.Render(fmt.Sprintf("%2s", somiText))
+			if soIsDefault {
+				somiCell = normalDefaultStyle.Render(fmt.Sprintf("%2s", somiText))
+			} else {
+				somiCell = normalStyle.Render(fmt.Sprintf("%2s", somiText))
+			}
 		}
 
 		// Ducking (DU) - display ducking index
@@ -570,18 +600,32 @@ func RenderInstrumentPhraseView(m *model.Model) string {
 		if duckingValue != -1 {
 			duckingText = fmt.Sprintf("%02X", duckingValue)
 		}
+		// Check if this ducking setting is still at default values
+		duckingIsDefault := duckingValue != -1 && m.IsDuckingSettingDefault(duckingValue)
 
 		var duckingCell string
 		if m.CurrentRow == dataIndex && m.CurrentCol == int(types.InstrumentColDU) { // Column 21 is the DU column
-			duckingCell = selectedStyle.Render(fmt.Sprintf("%2s", duckingText))
+			if duckingIsDefault {
+				duckingCell = selectedDefaultStyle.Render(fmt.Sprintf("%2s", duckingText))
+			} else {
+				duckingCell = selectedStyle.Render(fmt.Sprintf("%2s", duckingText))
+			}
 		} else if m.Clipboard.HasData && m.Clipboard.HighlightView == types.PhraseView && m.Clipboard.HighlightPhrase == m.CurrentPhrase && m.Clipboard.HighlightRow == dataIndex {
 			if m.Clipboard.Mode == types.RowMode || (m.Clipboard.Mode == types.CellMode && m.Clipboard.HighlightCol == int(types.InstrumentColDU)) {
 				duckingCell = copiedStyle.Render(fmt.Sprintf("%2s", duckingText))
 			} else {
-				duckingCell = normalStyle.Render(fmt.Sprintf("%2s", duckingText))
+				if duckingIsDefault {
+					duckingCell = normalDefaultStyle.Render(fmt.Sprintf("%2s", duckingText))
+				} else {
+					duckingCell = normalStyle.Render(fmt.Sprintf("%2s", duckingText))
+				}
 			}
 		} else {
-			duckingCell = normalStyle.Render(fmt.Sprintf("%2s", duckingText))
+			if duckingIsDefault {
+				duckingCell = normalDefaultStyle.Render(fmt.Sprintf("%2s", duckingText))
+			} else {
+				duckingCell = normalStyle.Render(fmt.Sprintf("%2s", duckingText))
+			}
 		}
 
 		row := fmt.Sprintf("%s %-3s  %s  %s  %s  %s%s%s  %s  %s %s%s%s%s  %s  %s  %s  %s  %s  %s  %s  %s", arrow, sliceCell, dtCell, noteCell, modulateCell, chordCell, chordAddCell, chordTransCell, velocityCell, gateCell, attackCell, decayCell, sustainCell, releaseCell, reverbCell, combCell, panCell, lpCell, hpCell, arpeggioCell, somiCell, duckingCell)
