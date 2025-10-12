@@ -132,6 +132,132 @@ func TogglePlaybackFromLastSongRow(m *model.Model) tea.Cmd {
 	return togglePlaybackWithConfigFromCtrlSpace(m, config)
 }
 
+// ToggleSingleTrackPlayback handles Space key in Song View - affects only current track
+func ToggleSingleTrackPlayback(m *model.Model) tea.Cmd {
+	if m.ViewMode != types.SongView {
+		// Not in song view, use regular playback
+		return TogglePlayback(m)
+	}
+
+	track := m.CurrentCol
+	if track < 0 || track >= 8 {
+		log.Printf("Invalid track %d for single track playback", track)
+		return nil
+	}
+
+	// Check if current track is playing
+	isCurrentTrackPlaying := m.IsPlaying && m.PlaybackMode == types.SongView && m.SongPlaybackActive[track]
+	
+	// Check if any other tracks are playing
+	hasOtherTracksPlaying := false
+	if m.IsPlaying && m.PlaybackMode == types.SongView {
+		for t := 0; t < 8; t++ {
+			if t != track && m.SongPlaybackActive[t] {
+				hasOtherTracksPlaying = true
+				break
+			}
+		}
+	}
+
+	if isCurrentTrackPlaying {
+		// Current track is playing
+		if hasOtherTracksPlaying {
+			// Other tracks are playing - queue stop at end of current cell
+			m.SongPlaybackQueued[track] = -1
+			log.Printf("Queued track %d to stop at cell boundary", track)
+		} else {
+			// No other tracks playing - stop immediately
+			m.SongPlaybackActive[track] = false
+			m.SongPlaybackQueued[track] = 0
+			// If this was the last playing track, stop playback entirely
+			m.IsPlaying = false
+			if m.RecordingActive {
+				stopRecording(m)
+			}
+			if m.CurrentlyPlayingFile != "" {
+				m.SendOSCPlaybackMessage(m.CurrentlyPlayingFile, false)
+				m.CurrentlyPlayingFile = ""
+			}
+			m.SendStopOSC()
+			log.Printf("Stopped track %d immediately (no other tracks playing)", track)
+		}
+	} else {
+		// Current track is not playing
+		songRow := m.CurrentRow
+		if songRow < 0 || songRow >= 16 {
+			log.Printf("Invalid song row %d for single track playback", songRow)
+			return nil
+		}
+
+		chainID := m.SongData[track][songRow]
+		if chainID == -1 {
+			log.Printf("No chain at track %d, row %d", track, songRow)
+			return nil
+		}
+
+		// Check if chain has valid phrase data
+		chainsData := m.GetChainsDataForTrack(track)
+		firstPhraseID := -1
+		firstChainRow := -1
+		for chainRow := 0; chainRow < 16; chainRow++ {
+			if (*chainsData)[chainID][chainRow] != -1 {
+				firstPhraseID = (*chainsData)[chainID][chainRow]
+				firstChainRow = chainRow
+				break
+			}
+		}
+
+		if firstPhraseID == -1 {
+			log.Printf("Chain %d has no phrases for track %d", chainID, track)
+			return nil
+		}
+
+		if hasOtherTracksPlaying {
+			// Other tracks are playing - queue start at next cell boundary
+			m.SongPlaybackQueued[track] = 1
+			log.Printf("Queued track %d to start at next cell boundary", track)
+		} else {
+			// No other tracks playing - start immediately
+			// Initialize playback if not already running
+			if !m.IsPlaying {
+				m.IsPlaying = true
+				m.PlaybackMode = types.SongView
+				m.PlaybackPhrase = -1
+				m.PlaybackRow = -1
+				m.PlaybackChain = -1
+				m.PlaybackChainRow = -1
+
+				// Initialize increment counters for this track
+				for phrase := 0; phrase < 255; phrase++ {
+					for row := 0; row < 255; row++ {
+						m.IncrementCounters[track][phrase][row] = -1
+					}
+				}
+			}
+
+			m.SongPlaybackActive[track] = true
+			m.SongPlaybackQueued[track] = 0
+			m.SongPlaybackRow[track] = songRow
+			m.SongPlaybackChain[track] = chainID
+			m.SongPlaybackChainRow[track] = firstChainRow
+			m.SongPlaybackPhrase[track] = firstPhraseID
+			m.SongPlaybackRowInPhrase[track] = FindFirstNonEmptyRowInPhraseForTrack(m, firstPhraseID, track)
+
+			// Initialize ticks for this track
+			m.LoadTicksLeftForTrack(track)
+
+			// Emit initial row for this track
+			EmitRowDataFor(m, firstPhraseID, m.SongPlaybackRowInPhrase[track], track)
+			log.Printf("Started track %d immediately at row %02X, chain %02X, phrase %02X with %d ticks", 
+				track, songRow, chainID, firstPhraseID, m.SongPlaybackTicksLeft[track])
+
+			return Tick(m)
+		}
+	}
+
+	return nil
+}
+
 func Tick(m *model.Model) tea.Cmd {
 	us := rowDurationMicroseconds(m)
 	return tea.Tick(time.Duration(us*1000), func(t time.Time) tea.Msg {
@@ -141,6 +267,9 @@ func Tick(m *model.Model) tea.Cmd {
 
 func AdvancePlayback(m *model.Model) {
 	oldRow := m.PlaybackRow
+
+	// Increment tick counter for blinking indicators
+	m.TickCount++
 
 	if m.PlaybackMode == types.SongView {
 		// Song playback mode with per-track tick counting
@@ -167,6 +296,15 @@ func AdvancePlayback(m *model.Model) {
 
 			log.Printf("Song track %d: ticks exhausted, advancing", track)
 
+			// Check for queued stop action at cell boundary
+			if m.SongPlaybackQueued[track] == -1 {
+				// Queued to stop - deactivate track
+				m.SongPlaybackActive[track] = false
+				m.SongPlaybackQueued[track] = 0
+				log.Printf("Song track %d stopped (queued stop executed)", track)
+				continue
+			}
+
 			// Now advance to next playable row for this track
 			if !advanceToNextPlayableRowForTrack(m, track) {
 				// Track finished, deactivate
@@ -187,6 +325,60 @@ func AdvancePlayback(m *model.Model) {
 			}
 		}
 		log.Printf("Song playback: processed %d active tracks", activeTrackCount)
+
+		// Process queued start actions for tracks at cell boundaries
+		for track := 0; track < 8; track++ {
+			if m.SongPlaybackQueued[track] == 1 && !m.SongPlaybackActive[track] {
+				// Queued to start - activate track
+				songRow := m.CurrentRow
+				if songRow < 0 || songRow >= 16 {
+					// Use last song row if current row is invalid
+					songRow = m.LastSongRow
+				}
+
+				chainID := m.SongData[track][songRow]
+				if chainID == -1 {
+					m.SongPlaybackQueued[track] = 0
+					log.Printf("Cannot start track %d: no chain at row %d", track, songRow)
+					continue
+				}
+
+				// Find first phrase in chain
+				chainsData := m.GetChainsDataForTrack(track)
+				firstPhraseID := -1
+				firstChainRow := -1
+				for chainRow := 0; chainRow < 16; chainRow++ {
+					if (*chainsData)[chainID][chainRow] != -1 {
+						firstPhraseID = (*chainsData)[chainID][chainRow]
+						firstChainRow = chainRow
+						break
+					}
+				}
+
+				if firstPhraseID == -1 {
+					m.SongPlaybackQueued[track] = 0
+					log.Printf("Cannot start track %d: chain %d has no phrases", track, chainID)
+					continue
+				}
+
+				// Activate the track
+				m.SongPlaybackActive[track] = true
+				m.SongPlaybackQueued[track] = 0
+				m.SongPlaybackRow[track] = songRow
+				m.SongPlaybackChain[track] = chainID
+				m.SongPlaybackChainRow[track] = firstChainRow
+				m.SongPlaybackPhrase[track] = firstPhraseID
+				m.SongPlaybackRowInPhrase[track] = FindFirstNonEmptyRowInPhraseForTrack(m, firstPhraseID, track)
+
+				// Initialize ticks for this track
+				m.LoadTicksLeftForTrack(track)
+
+				// Emit initial row for this track
+				EmitRowDataFor(m, firstPhraseID, m.SongPlaybackRowInPhrase[track], track)
+				log.Printf("Song track %d started (queued start executed) at row %02X, chain %02X, phrase %02X with %d ticks",
+					track, songRow, chainID, firstPhraseID, m.SongPlaybackTicksLeft[track])
+			}
+		}
 	} else if m.PlaybackMode == types.ChainView {
 		// Chain playback mode - advance through phrases in sequence
 		// Find next row with playback enabled (unified DT-based playback)

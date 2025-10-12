@@ -57,6 +57,7 @@ type Model struct {
 	PlaybackPhrase        int            // Current phrase being played
 	PlaybackMode          types.ViewMode // Whether playback started from Chain or Phrase view
 	ticker                *time.Ticker
+	TickCount             int     // Counter for tick-based animations (blinking indicators)
 	LastEditRow           int            // Track the last row that was edited
 	BPM                   float32        // Beats per minute
 	PPQ                   int            // Pulses per quarter note
@@ -125,6 +126,7 @@ type Model struct {
 	SongPlaybackPhrase      [8]int  // Current phrase being played for each track
 	SongPlaybackRowInPhrase [8]int  // Current row within phrase for each track
 	SongPlaybackTicksLeft   [8]int  // Remaining ticks until next row advance for each track
+	SongPlaybackQueued      [8]int  // Queued action for each track: 0 = none, 1 = start, -1 = stop
 	// Effect step tracking - tracks how many times each step has been played for Every functionality
 	EffectStepCounter [8][255][255]int // [track][phrase][row] = step count for retrigger and timestretch Every logic
 	// Increment counter tracking - tracks increment counter values per track/phrase/row

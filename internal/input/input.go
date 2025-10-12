@@ -1634,6 +1634,9 @@ func handleSpace(m *model.Model) tea.Cmd {
 			storage.AutoSave(m)
 		}
 		return nil
+	} else if m.ViewMode == types.SongView {
+		// Space in Song View affects only the current track
+		return ToggleSingleTrackPlayback(m)
 	} else if m.ViewMode != types.SettingsView && m.ViewMode != types.FileMetadataView {
 		return TogglePlayback(m)
 	}
