@@ -276,6 +276,7 @@ func AdvancePlayback(m *model.Model) {
 		// Song playback mode with per-track tick counting
 		log.Printf("Song playback advancing - checking %d tracks", 8)
 		activeTrackCount := 0
+		anyTrackAtCellBoundary := false // Track if any track reached a cell boundary this tick
 
 		for track := 0; track < 8; track++ {
 			if !m.SongPlaybackActive[track] {
@@ -295,6 +296,8 @@ func AdvancePlayback(m *model.Model) {
 				continue
 			}
 
+			// Mark that at least one track reached a cell boundary
+			anyTrackAtCellBoundary = true
 			log.Printf("Song track %d: ticks exhausted, advancing", track)
 
 			// Check for queued stop action at cell boundary
@@ -327,9 +330,10 @@ func AdvancePlayback(m *model.Model) {
 		}
 		log.Printf("Song playback: processed %d active tracks", activeTrackCount)
 
-		// Process queued start actions for tracks at cell boundaries
-		for track := 0; track < 8; track++ {
-			if m.SongPlaybackQueued[track] == 1 && !m.SongPlaybackActive[track] {
+		// Process queued start actions ONLY at cell boundaries (when at least one track advanced)
+		if anyTrackAtCellBoundary {
+			for track := 0; track < 8; track++ {
+				if m.SongPlaybackQueued[track] == 1 && !m.SongPlaybackActive[track] {
 				// Queued to start - activate track
 				songRow := m.SongPlaybackQueuedRow[track]
 				// Validate song row bounds (0-15). This should not occur in normal operation
@@ -383,6 +387,7 @@ func AdvancePlayback(m *model.Model) {
 					track, songRow, chainID, firstPhraseID, m.SongPlaybackTicksLeft[track])
 			}
 		}
+		} // End of anyTrackAtCellBoundary check
 
 		// Check if all tracks are now inactive - stop playback entirely
 		allTracksInactive := true
