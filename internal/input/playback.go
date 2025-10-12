@@ -209,16 +209,29 @@ func ToggleTrackPlayback(m *model.Model, track, row int) tea.Cmd {
 
 	// Track is active
 	if isCurrentlyPlayingCell {
-		// Case 1: Pressing spacebar on the currently playing cell - queue stop
-		log.Printf("Track %d: queuing stop after current cell (row %02X) finishes", track, row)
-		m.SongPlaybackQueuedStop[track] = true
-		m.SongPlaybackQueuedRow[track] = -1 // Clear any queued row
+		// Case 1: Pressing spacebar on the currently playing cell - toggle queue stop
+		if m.SongPlaybackQueuedStop[track] {
+			// Already queued to stop, cancel it
+			log.Printf("Track %d: canceling queued stop", track)
+			m.SongPlaybackQueuedStop[track] = false
+		} else {
+			// Queue stop after current cell finishes
+			log.Printf("Track %d: queuing stop after current cell (row %02X) finishes", track, row)
+			m.SongPlaybackQueuedStop[track] = true
+			m.SongPlaybackQueuedRow[track] = -1 // Clear any queued row
+		}
 		return nil
 	} else {
 		// Case 3: Track is playing but different cell - queue this cell to play next
-		log.Printf("Track %d: queuing row %02X to play after current cell finishes", track, row)
-		m.SongPlaybackQueuedRow[track] = row
-		m.SongPlaybackQueuedStop[track] = false // Clear any queued stop
+		// If the same row is already queued, toggle it off
+		if m.SongPlaybackQueuedRow[track] == row {
+			log.Printf("Track %d: canceling queued row %02X", track, row)
+			m.SongPlaybackQueuedRow[track] = -1
+		} else {
+			log.Printf("Track %d: queuing row %02X to play after current cell finishes", track, row)
+			m.SongPlaybackQueuedRow[track] = row
+			m.SongPlaybackQueuedStop[track] = false // Clear any queued stop
+		}
 		return nil
 	}
 }
