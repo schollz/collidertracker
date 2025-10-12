@@ -332,8 +332,10 @@ func AdvancePlayback(m *model.Model) {
 			if m.SongPlaybackQueued[track] == 1 && !m.SongPlaybackActive[track] {
 				// Queued to start - activate track
 				songRow := m.SongPlaybackQueuedRow[track]
+				// Validate song row bounds (0-15). This should not occur in normal operation
+				// as the row is set from CurrentRow when queuing, but we check defensively.
 				if songRow < 0 || songRow >= 16 {
-					log.Printf("Invalid queued song row %d for track %d", songRow, track)
+					log.Printf("ERROR: Invalid queued song row %d for track %d (valid range: 0-15) - clearing queue", songRow, track)
 					m.SongPlaybackQueued[track] = 0
 					continue
 				}
@@ -341,7 +343,7 @@ func AdvancePlayback(m *model.Model) {
 				chainID := m.SongData[track][songRow]
 				if chainID == -1 {
 					m.SongPlaybackQueued[track] = 0
-					log.Printf("Cannot start track %d: no chain at row %d", track, songRow)
+					log.Printf("Cannot start track %d: no chain at row %02X (empty cell)", track, songRow)
 					continue
 				}
 

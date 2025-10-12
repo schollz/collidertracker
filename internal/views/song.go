@@ -58,7 +58,6 @@ func RenderSongView(m *model.Model) string {
 				// Check if this specific track is playing and on current song row
 				trackPlaying := false
 				trackQueued := false
-				queuedRow := -1
 				if m.IsPlaying && m.PlaybackMode == types.SongView {
 					if m.SongPlaybackActive[track] && m.SongPlaybackRow[track] == row {
 						trackPlaying = true
@@ -66,8 +65,7 @@ func RenderSongView(m *model.Model) string {
 					// Check if track is queued (either to start or stop)
 					if m.SongPlaybackQueued[track] == 1 {
 						// Queued to start - check if this is the row it will start on
-						queuedRow = m.SongPlaybackQueuedRow[track]
-						if queuedRow == row {
+						if m.SongPlaybackQueuedRow[track] == row {
 							trackQueued = true
 						}
 					} else if m.SongPlaybackQueued[track] == -1 {
