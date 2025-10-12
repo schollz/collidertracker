@@ -181,6 +181,8 @@ func HandleKeyInput(m *model.Model, msg tea.KeyMsg) tea.Cmd {
 		if m.ViewMode == types.ArpeggioView {
 			ClearArpeggioCell(m)
 		}
+		// Cancel any queued playback action in Song view
+		CancelQueuedAction(m)
 
 	case "shift+right":
 		return handleShiftRight(m)

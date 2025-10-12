@@ -132,6 +132,26 @@ func TogglePlaybackFromLastSongRow(m *model.Model) tea.Cmd {
 	return togglePlaybackWithConfigFromCtrlSpace(m, config)
 }
 
+// CancelQueuedAction cancels any queued playback action (start, stop, or jump) for the current track
+func CancelQueuedAction(m *model.Model) {
+	if m.ViewMode != types.SongView {
+		return
+	}
+
+	track := m.CurrentCol
+	if track < 0 || track >= 8 {
+		return
+	}
+
+	// Check if there's a queued action for this track
+	if m.SongPlaybackQueued[track] != 0 {
+		log.Printf("ESC: Cancelling queued action for track %d (queued=%d, queuedRow=%d)",
+			track, m.SongPlaybackQueued[track], m.SongPlaybackQueuedRow[track])
+		m.SongPlaybackQueued[track] = 0
+		m.SongPlaybackQueuedRow[track] = -1
+	}
+}
+
 // ToggleSingleTrackPlayback handles Space key in Song View - affects only current track
 func ToggleSingleTrackPlayback(m *model.Model) tea.Cmd {
 	if m.ViewMode != types.SongView {
