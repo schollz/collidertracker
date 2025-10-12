@@ -58,13 +58,23 @@ func RenderSongView(m *model.Model) string {
 				// Check if this specific track is playing and on current song row
 				trackPlaying := false
 				trackQueued := false
+				queuedRow := -1
 				if m.IsPlaying && m.PlaybackMode == types.SongView {
 					if m.SongPlaybackActive[track] && m.SongPlaybackRow[track] == row {
 						trackPlaying = true
 					}
 					// Check if track is queued (either to start or stop)
-					if m.SongPlaybackQueued[track] != 0 {
-						trackQueued = true
+					if m.SongPlaybackQueued[track] == 1 {
+						// Queued to start - check if this is the row it will start on
+						queuedRow = m.SongPlaybackQueuedRow[track]
+						if queuedRow == row {
+							trackQueued = true
+						}
+					} else if m.SongPlaybackQueued[track] == -1 {
+						// Queued to stop - check if this is the row it's currently playing on
+						if m.SongPlaybackActive[track] && m.SongPlaybackRow[track] == row {
+							trackQueued = true
+						}
 					}
 				}
 				chainID := m.SongData[track][row]
@@ -79,7 +89,7 @@ func RenderSongView(m *model.Model) string {
 				}
 
 				// Determine arrow display based on state
-				if trackQueued && m.CurrentCol == track {
+				if trackQueued {
 					// Track is queued - blink arrow (show every other tick)
 					if m.TickCount%2 == 0 {
 						chainCell = styles.Playback.Render("▶") + baseCell

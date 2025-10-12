@@ -127,6 +127,7 @@ type Model struct {
 	SongPlaybackRowInPhrase [8]int  // Current row within phrase for each track
 	SongPlaybackTicksLeft   [8]int  // Remaining ticks until next row advance for each track
 	SongPlaybackQueued      [8]int  // Queued action for each track: 0 = none, 1 = start, -1 = stop
+	SongPlaybackQueuedRow   [8]int  // Song row to start from for queued start actions
 	// Effect step tracking - tracks how many times each step has been played for Every functionality
 	EffectStepCounter [8][255][255]int // [track][phrase][row] = step count for retrigger and timestretch Every logic
 	// Increment counter tracking - tracks increment counter values per track/phrase/row

@@ -215,7 +215,8 @@ func ToggleSingleTrackPlayback(m *model.Model) tea.Cmd {
 		if hasOtherTracksPlaying {
 			// Other tracks are playing - queue start at next cell boundary
 			m.SongPlaybackQueued[track] = 1
-			log.Printf("Queued track %d to start at next cell boundary", track)
+			m.SongPlaybackQueuedRow[track] = songRow // Store the row to start from
+			log.Printf("Queued track %d to start at next cell boundary from row %02X", track, songRow)
 		} else {
 			// No other tracks playing - start immediately
 			// Initialize playback if not already running
@@ -330,10 +331,11 @@ func AdvancePlayback(m *model.Model) {
 		for track := 0; track < 8; track++ {
 			if m.SongPlaybackQueued[track] == 1 && !m.SongPlaybackActive[track] {
 				// Queued to start - activate track
-				songRow := m.CurrentRow
+				songRow := m.SongPlaybackQueuedRow[track]
 				if songRow < 0 || songRow >= 16 {
-					// Use last song row if current row is invalid
-					songRow = m.LastSongRow
+					log.Printf("Invalid queued song row %d for track %d", songRow, track)
+					m.SongPlaybackQueued[track] = 0
+					continue
 				}
 
 				chainID := m.SongData[track][songRow]
@@ -378,6 +380,27 @@ func AdvancePlayback(m *model.Model) {
 				log.Printf("Song track %d started (queued start executed) at row %02X, chain %02X, phrase %02X with %d ticks",
 					track, songRow, chainID, firstPhraseID, m.SongPlaybackTicksLeft[track])
 			}
+		}
+
+		// Check if all tracks are now inactive - stop playback entirely
+		allTracksInactive := true
+		for track := 0; track < 8; track++ {
+			if m.SongPlaybackActive[track] {
+				allTracksInactive = false
+				break
+			}
+		}
+		if allTracksInactive {
+			m.IsPlaying = false
+			if m.RecordingActive {
+				stopRecording(m)
+			}
+			if m.CurrentlyPlayingFile != "" {
+				m.SendOSCPlaybackMessage(m.CurrentlyPlayingFile, false)
+				m.CurrentlyPlayingFile = ""
+			}
+			m.SendStopOSC()
+			log.Printf("All tracks inactive - stopped playback")
 		}
 	} else if m.PlaybackMode == types.ChainView {
 		// Chain playback mode - advance through phrases in sequence
