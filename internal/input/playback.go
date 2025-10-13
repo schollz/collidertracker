@@ -10,6 +10,43 @@ import (
 )
 
 func TogglePlayback(m *model.Model) tea.Cmd {
+	// If currently playing and trying to start playback from a different context, stop first
+	if m.IsPlaying {
+		shouldStop := false
+
+		// Check if switching between different playback contexts
+		if m.ViewMode == types.ChainView && m.PlaybackMode != types.ChainView {
+			shouldStop = true
+		} else if m.ViewMode == types.PhraseView && m.PlaybackMode != types.PhraseView {
+			shouldStop = true
+		} else if m.ViewMode == types.ChainView && m.PlaybackMode == types.ChainView && m.PlaybackChain != m.CurrentChain {
+			// Different chain
+			shouldStop = true
+		} else if m.ViewMode == types.PhraseView && m.PlaybackMode == types.PhraseView && m.PlaybackPhrase != m.CurrentPhrase {
+			// Different phrase
+			shouldStop = true
+		}
+
+		if shouldStop {
+			log.Printf("Stopping playback before starting new playback in different context")
+			m.IsPlaying = false
+			if m.RecordingActive {
+				stopRecording(m)
+			}
+			if m.CurrentlyPlayingFile != "" {
+				m.SendOSCPlaybackMessage(m.CurrentlyPlayingFile, false)
+				m.CurrentlyPlayingFile = ""
+			}
+			m.SendStopOSC()
+			// Reset playback state
+			for t := 0; t < 8; t++ {
+				m.SongPlaybackActive[t] = false
+				m.SongPlaybackQueued[t] = 0
+				m.SongPlaybackQueuedRow[t] = -1
+			}
+		}
+	}
+
 	var config PlaybackConfig
 
 	if m.ViewMode == types.SongView {
@@ -120,6 +157,27 @@ func TogglePlaybackFromTopGlobal(m *model.Model) tea.Cmd {
 }
 
 func TogglePlaybackFromLastSongRow(m *model.Model) tea.Cmd {
+	// If playback was started from Chain or Phrase view, stop it first
+	if m.IsPlaying && (m.PlaybackMode == types.ChainView || m.PlaybackMode == types.PhraseView) {
+		log.Printf("Ctrl+Space: Stopping playback that was started from %v view", m.PlaybackMode)
+		m.IsPlaying = false
+		if m.RecordingActive {
+			stopRecording(m)
+		}
+		if m.CurrentlyPlayingFile != "" {
+			m.SendOSCPlaybackMessage(m.CurrentlyPlayingFile, false)
+			m.CurrentlyPlayingFile = ""
+		}
+		m.SendStopOSC()
+		// Reset playback state
+		for t := 0; t < 8; t++ {
+			m.SongPlaybackActive[t] = false
+			m.SongPlaybackQueued[t] = 0
+			m.SongPlaybackQueuedRow[t] = -1
+		}
+		// Now continue with normal Ctrl+Space behavior (which will start new playback)
+	}
+
 	// Always play ALL tracks from the last Song view row, regardless of current view
 	config := PlaybackConfig{
 		Mode:          types.SongView,
@@ -163,6 +221,27 @@ func ToggleSingleTrackPlayback(m *model.Model) tea.Cmd {
 	if track < 0 || track >= 8 {
 		log.Printf("Invalid track %d for single track playback", track)
 		return nil
+	}
+
+	// If playback was started from Chain or Phrase view, stop it first
+	if m.IsPlaying && (m.PlaybackMode == types.ChainView || m.PlaybackMode == types.PhraseView) {
+		log.Printf("Stopping playback that was started from %v view", m.PlaybackMode)
+		m.IsPlaying = false
+		if m.RecordingActive {
+			stopRecording(m)
+		}
+		if m.CurrentlyPlayingFile != "" {
+			m.SendOSCPlaybackMessage(m.CurrentlyPlayingFile, false)
+			m.CurrentlyPlayingFile = ""
+		}
+		m.SendStopOSC()
+		// Reset playback state
+		for t := 0; t < 8; t++ {
+			m.SongPlaybackActive[t] = false
+			m.SongPlaybackQueued[t] = 0
+			m.SongPlaybackQueuedRow[t] = -1
+		}
+		// Now continue with normal Space behavior (which will start new playback)
 	}
 
 	// Check if current track is playing
