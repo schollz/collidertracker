@@ -312,7 +312,7 @@ func renderAnimatedBlocks(centerX int, progress float64) string {
 	}
 
 	var lines []string
-	maxLines := 5 // Multi-line animation
+	maxLines := 7 // Increased from 5 to 7 for more visual space
 
 	for lineIdx := 0; lineIdx < maxLines; lineIdx++ {
 		lines = append(lines, renderAnimationLine(centerX, lineIdx, maxLines, phase1, phase2, phase3, phase4, phase5, termTime))
@@ -344,12 +344,13 @@ func renderMainConvergenceLine(centerX int, phase1, phase2, phase3, phase4, phas
 	var line strings.Builder
 
 	// Enhanced character sets for different phases
-	scatterChars := []string{"░", "▒", "▓", "◆", "◇", "○", "●", "◎", "◉", "⬟", "⬢", "⬡"}
+	scatterChars := []string{"░", "▒", "▓", "◆", "◇", "○", "●", "◎", "◉", "⬟", "⬢", "⬡", "⬙", "⬚", "⬛", "⬜", "◐", "◑", "◒", "◓"}
 	blockChars := []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 	infinityChars := []string{"∞", "⧢", "⧣", "⟐", "⟑"}
+	spiralChars := []string{"◠", "◡", "◜", "◝", "◞", "◟", "◌", "○", "◎"}
 
-	// Calculate particle count and positions
-	particleCount := 18
+	// Calculate particle count and positions - INCREASED for more dynamic effect
+	particleCount := 28 // Increased from 18 to 28
 	particles := make([]Particle, particleCount)
 
 	// Initialize particles based on animation phase
@@ -397,9 +398,9 @@ func renderMainConvergenceLine(centerX int, phase1, phase2, phase3, phase4, phas
 			particles[i].Color = getPhaseColor(2, seed, termTime)
 		}
 
-		// Phase 3: Formation sequence - infinity symbol
+		// Phase 3: Formation sequence - infinity symbol with swirl
 		if phase3 > 0 && phase2 >= 1.0 {
-			// Form infinity symbol
+			// Form infinity symbol with additional swirl effect
 			angle := float64(i) / float64(particleCount) * 2 * math.Pi
 			infScale := 8.0 * phase3
 
@@ -408,13 +409,24 @@ func renderMainConvergenceLine(centerX int, phase1, phase2, phase3, phase4, phas
 			infX := infScale * math.Cos(t) / (1 + math.Sin(t)*math.Sin(t))
 			infY := infScale * math.Sin(t) * math.Cos(t) / (1 + math.Sin(t)*math.Sin(t)) * 0.3
 
+			// Add swirling motion for extra particles
+			if i >= particleCount/2 {
+				// Secondary swirl layer
+				swirlAngle := angle*2 + float64(termTime)/150.0
+				swirlRadius := 6.0 + math.Sin(float64(termTime)/180.0+angle)*2.0
+				infX = swirlRadius * math.Cos(swirlAngle)
+				infY = swirlRadius * math.Sin(swirlAngle) * 0.4
+				particles[i].Char = spiralChars[i%len(spiralChars)]
+			} else {
+				infIndex := int(phase3 * float64(len(infinityChars)-1))
+				if infIndex >= len(infinityChars) {
+					infIndex = len(infinityChars) - 1
+				}
+				particles[i].Char = infinityChars[infIndex]
+			}
+
 			particles[i].X = float64(centerX) + infX
 			particles[i].Y = infY
-			infIndex := int(phase3 * float64(len(infinityChars)-1))
-			if infIndex >= len(infinityChars) {
-				infIndex = len(infinityChars) - 1
-			}
-			particles[i].Char = infinityChars[infIndex]
 			particles[i].Color = getPhaseColor(3, seed, termTime)
 		}
 
@@ -444,7 +456,7 @@ func renderMainConvergenceLine(centerX int, phase1, phase2, phase3, phase4, phas
 			}
 		}
 
-		// Phase 5: Crystallization and final burst
+		// Phase 5: Crystallization and final burst with sparkles
 		if phase5 > 0 && phase4 >= 1.0 {
 			// Lock into final perfect formation
 			if i < 8 {
@@ -459,6 +471,19 @@ func renderMainConvergenceLine(centerX int, phase1, phase2, phase3, phase4, phas
 				} else {
 					particles[i].Color = "15" // White
 				}
+			} else {
+				// Add sparkle/burst particles radiating outward
+				sparkleAngle := float64(i-8) / float64(particleCount-8) * 2 * math.Pi
+				sparkleRadius := phase5 * 15.0 * bounceEaseOut(phase5)
+				sparkleChars := []string{"✦", "✧", "✨", "⭐", "✪", "✫", "✬", "✭", "✮", "✯", "*", "·"}
+
+				particles[i].X = float64(centerX) + math.Cos(sparkleAngle+float64(termTime)/100.0)*sparkleRadius
+				particles[i].Y = math.Sin(sparkleAngle+float64(termTime)/100.0) * sparkleRadius * 0.3
+				particles[i].Char = sparkleChars[i%len(sparkleChars)]
+
+				// Multicolor sparkles
+				sparkleColors := []string{"226", "220", "214", "208", "202", "196", "15", "51", "45"}
+				particles[i].Color = sparkleColors[int(math.Abs(math.Sin(seed+float64(termTime)/80.0))*float64(len(sparkleColors)))%len(sparkleColors)]
 			}
 		}
 	}
@@ -512,6 +537,75 @@ func renderMainConvergenceLine(centerX int, phase1, phase2, phase3, phase4, phas
 // renderSupportLine creates supporting animation lines (digital rain, particles)
 func renderSupportLine(centerX, lineIdx, maxLines int, phase1, phase2, phase3, phase4, phase5 float64, termTime int64) string {
 	var line strings.Builder
+
+	// Ripple/wave effect during early phases
+	if phase1 > 0 && phase2 < 1.0 {
+		waveChars := []string{"~", "≈", "∼", "⌇", "⌁", "∿"}
+		rippleCount := 4
+		for i := 0; i < rippleCount; i++ {
+			seed := float64(i*17 + lineIdx*9 + int(termTime/140))
+			wavePhase := seed + float64(termTime)/200.0
+
+			// Create expanding ripple effect from center
+			rippleRadius := math.Abs(math.Sin(wavePhase)) * float64(centerX) * phase1
+			distFromCenter := math.Abs(float64(lineIdx - maxLines/2))
+
+			if distFromCenter < rippleRadius*0.15 {
+				waveX := int(float64(centerX) + math.Cos(wavePhase*2)*rippleRadius*0.8)
+
+				if waveX >= 0 && waveX < centerX*2 {
+					currentLen := line.Len()
+					needed := waveX - currentLen
+					if needed > 0 {
+						line.WriteString(strings.Repeat(" ", needed))
+					}
+
+					charIdx := int(math.Abs(math.Sin(seed)) * float64(len(waveChars)))
+					if charIdx >= len(waveChars) {
+						charIdx = len(waveChars) - 1
+					}
+					char := waveChars[charIdx]
+
+					// Color based on phase
+					color := getPhaseColor(1, seed, termTime)
+					style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
+					line.WriteString(style.Render(char))
+				}
+			}
+		}
+	}
+
+	// Orbital particles during phase 2-3
+	if phase2 > 0 && phase3 < 1.0 {
+		orbitalChars := []string{"◦", "•", "◘", "○", "◎", "◉"}
+		orbitCount := 5
+
+		for i := 0; i < orbitCount; i++ {
+			seed := float64(i*11 + lineIdx*7 + int(termTime/170))
+			orbitAngle := seed*2 + float64(termTime)/130.0
+			orbitRadius := float64(maxLines-lineIdx) * 4.0 * phase2
+
+			orbitX := int(float64(centerX) + math.Cos(orbitAngle)*orbitRadius)
+
+			if orbitX >= 0 && orbitX < centerX*2 {
+				currentLen := line.Len()
+				needed := orbitX - currentLen
+				if needed > 0 {
+					line.WriteString(strings.Repeat(" ", needed))
+				}
+
+				charIdx := int(math.Abs(math.Sin(seed*1.7)) * float64(len(orbitalChars)))
+				if charIdx >= len(orbitalChars) {
+					charIdx = len(orbitalChars) - 1
+				}
+				char := orbitalChars[charIdx]
+
+				color := getPhaseColor(2, seed, termTime)
+				style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
+				line.WriteString(style.Render(char))
+			}
+		}
+	}
 
 	// Digital rain effect for supporting lines
 	if phase4 > 0 {
@@ -631,32 +725,32 @@ func getPhaseColor(phase int, seed float64, termTime int64) string {
 	timeOffset := float64(termTime) / 110.0
 
 	switch phase {
-	case 1: // Scattered genesis - blues and purples
-		colors := []string{"54", "55", "56", "57", "93", "99", "105"}
+	case 1: // Scattered genesis - blues, purples, and cyans
+		colors := []string{"54", "55", "56", "57", "93", "99", "105", "39", "45", "51", "81", "87"}
 		idx := int(math.Abs(math.Sin(seed+timeOffset)) * float64(len(colors)))
 		if idx >= len(colors) {
 			idx = len(colors) - 1
 		}
 		return colors[idx]
 
-	case 2: // Gravitational pull - cyans and greens
-		colors := []string{"37", "43", "49", "50", "51", "87", "123"}
+	case 2: // Gravitational pull - cyans, greens, and teals
+		colors := []string{"37", "43", "49", "50", "51", "87", "123", "36", "42", "48", "86", "122"}
 		idx := int(math.Abs(math.Sin(seed*1.3+timeOffset)) * float64(len(colors)))
 		if idx >= len(colors) {
 			idx = len(colors) - 1
 		}
 		return colors[idx]
 
-	case 3: // Formation sequence - magentas and reds
-		colors := []string{"161", "162", "163", "164", "200", "201", "207"}
+	case 3: // Formation sequence - magentas, reds, and pinks
+		colors := []string{"161", "162", "163", "164", "200", "201", "207", "197", "198", "199", "205", "206"}
 		idx := int(math.Abs(math.Sin(seed*1.7+timeOffset)) * float64(len(colors)))
 		if idx >= len(colors) {
 			idx = len(colors) - 1
 		}
 		return colors[idx]
 
-	case 4: // Digital rain - greens
-		colors := []string{"22", "28", "34", "40", "46", "82", "118"}
+	case 4: // Digital rain - various shades of green
+		colors := []string{"22", "28", "34", "40", "46", "82", "118", "76", "70", "64", "106", "112"}
 		idx := int(math.Abs(math.Sin(seed*2.1+timeOffset)) * float64(len(colors)))
 		if idx >= len(colors) {
 			idx = len(colors) - 1
