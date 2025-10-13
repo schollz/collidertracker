@@ -1417,9 +1417,10 @@ func (m *Model) sendOSCInstrumentMessage(params InstrumentOSCParams) {
 		return // OSC not configured
 	}
 
-	// If MIDI is configured, skip OSC messages (MI mode takes precedence)
-	if params.MidiSettingsIndex != -1 {
-		log.Printf("DEBUG: sendOSCInstrumentMessage - MIDI is configured (MI mode), skipping OSC message")
+	// Check which mode the user has selected in the instrument view
+	// Only use MI if the user is in MI mode, otherwise use SO
+	if m.SOColumnMode == types.SOModeMIDI && params.MidiSettingsIndex != -1 {
+		log.Printf("DEBUG: sendOSCInstrumentMessage - User is in MI mode, using MIDI")
 		m.sendMIDIInstrumentMessage(params)
 		return
 	}
