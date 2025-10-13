@@ -66,8 +66,8 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 		content.WriteString("\n")
 	}
 
-	// Render animated blocks
-	blocksLine := renderAnimatedBlocks(centerX, progress)
+	// Render animated blocks (top)
+	blocksLine := renderAnimatedBlocks(centerX, progress, 0)
 	content.WriteString(blocksLine)
 	content.WriteString("\n\n")
 
@@ -290,9 +290,9 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 		}
 	}
 
-	// Add animations below the text as well
+	// Add animations below the text as well (with different seed for variety)
 	content.WriteString("\n")
-	blocksLineBelow := renderAnimatedBlocks(centerX, progress)
+	blocksLineBelow := renderAnimatedBlocks(centerX, progress, 12345)
 	content.WriteString(blocksLineBelow)
 	content.WriteString("\n")
 
@@ -318,8 +318,12 @@ type Particle struct {
 }
 
 // renderAnimatedBlocks creates the enhanced digital convergence animation
-func renderAnimatedBlocks(centerX int, progress float64) string {
+func renderAnimatedBlocks(centerX int, progress float64, seed int) string {
 	termTime := time.Now().UnixMilli()
+
+	// Add seed offset to create variation between top and bottom animations
+	timeOffset := int64(seed)
+	termTime += timeOffset
 
 	// Animation phases
 	var phase1, phase2, phase3, phase4, phase5 float64
