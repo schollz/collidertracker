@@ -348,3 +348,137 @@ func TestCancelQueuedAction(t *testing.T) {
 		assert.Equal(t, 2, m.SongPlaybackQueuedRow[0], "Queued row should be unchanged in non-Song view")
 	})
 }
+
+func TestQueuedActionWithSingleRowSongTrack(t *testing.T) {
+	// Test that queued actions are processed when a song track has only one row
+	// This is the bug fix: when a chain loops back to its beginning (stays on same song row),
+	// queued actions should still be processed
+	
+	t.Run("Queued start action triggered when chain loops back to beginning", func(t *testing.T) {
+		m := model.NewModel(0, "test.json", false)
+		m.ViewMode = types.SongView
+		
+		// Set up song data with only ONE row for track 0
+		m.SongData[0][5] = 0 // Track 0, Row 5, Chain 0 (only one row in song)
+		
+		// Set up chain 0 with a short phrase that will loop
+		m.SamplerChainsData[0][0] = 0  // Chain 0 has phrase 0
+		
+		// Set up phrase 0 with only one playable row (so it loops quickly)
+		m.SamplerPhrasesData[0][0][types.ColDeltaTime] = 1  // Phrase 0, row 0 is playable with DT=1
+		
+		// Start track 1 playing (so track 0 will queue)
+		m.IsPlaying = true
+		m.PlaybackMode = types.SongView
+		m.SongPlaybackActive[1] = true
+		m.SongData[1][3] = 1 // Track 1, Row 3, Chain 1
+		m.SongPlaybackRow[1] = 3
+		m.SongPlaybackChain[1] = 1
+		m.SongPlaybackChainRow[1] = 0
+		m.SongPlaybackPhrase[1] = 1
+		m.SongPlaybackRowInPhrase[1] = 0
+		m.SongPlaybackTicksLeft[1] = 10 // Track 1 has plenty of ticks left
+		
+		// Set up chain 1 for track 1 (so it's valid)
+		m.SamplerChainsData[1][0] = 1
+		m.SamplerPhrasesData[1][0][types.ColDeltaTime] = 4
+		
+		// Queue track 0 to start
+		m.CurrentCol = 0
+		m.CurrentRow = 5
+		ToggleSingleTrackPlayback(m)
+		
+		assert.Equal(t, 1, m.SongPlaybackQueued[0], "Track 0 should be queued to start")
+		assert.Equal(t, 5, m.SongPlaybackQueuedRow[0], "Queued row should be 5")
+		assert.False(t, m.SongPlaybackActive[0], "Track 0 should not be active yet")
+		
+		// Now simulate track 1 advancing through its phrase until it loops
+		// This should trigger queued actions
+		for i := 0; i < 50; i++ {
+			// Decrement ticks for track 1
+			if m.SongPlaybackTicksLeft[1] > 0 {
+				m.SongPlaybackTicksLeft[1]--
+			}
+			
+			if m.SongPlaybackTicksLeft[1] == 0 {
+				// Advance track 1
+				AdvancePlayback(m)
+				
+				// Check if track 0 was activated
+				if m.SongPlaybackActive[0] {
+					assert.Equal(t, 0, m.SongPlaybackQueued[0], "Track 0 queue should be cleared after activation")
+					assert.Equal(t, 5, m.SongPlaybackRow[0], "Track 0 should be playing row 5")
+					assert.Equal(t, 0, m.SongPlaybackChain[0], "Track 0 should be playing chain 0")
+					return // Test passed
+				}
+			}
+		}
+		
+		// If we get here, the queued action was never processed
+		t.Fatal("Queued start action was never processed after track 1 looped multiple times")
+	})
+	
+	t.Run("Queued stop action triggered when single-row track loops", func(t *testing.T) {
+		m := model.NewModel(0, "test.json", false)
+		m.ViewMode = types.SongView
+		
+		// Set up song data with only ONE row for track 0
+		m.SongData[0][5] = 0 // Track 0, Row 5, Chain 0 (only one row in song)
+		
+		// Set up chain 0 with a short phrase
+		m.SamplerChainsData[0][0] = 0
+		m.SamplerPhrasesData[0][0][types.ColDeltaTime] = 1  // DT=1 for quick looping
+		
+		// Start track 0 playing
+		m.CurrentCol = 0
+		m.CurrentRow = 5
+		m.IsPlaying = false
+		ToggleSingleTrackPlayback(m)
+		
+		assert.True(t, m.SongPlaybackActive[0], "Track 0 should be playing")
+		
+		// Start track 1 playing (so track 0 won't stop immediately)
+		m.SongPlaybackActive[1] = true
+		m.SongPlaybackRow[1] = 3
+		m.SongData[1][3] = 1
+		m.SamplerChainsData[1][0] = 1
+		m.SamplerPhrasesData[1][0][types.ColDeltaTime] = 4
+		m.SongPlaybackChain[1] = 1
+		m.SongPlaybackChainRow[1] = 0
+		m.SongPlaybackPhrase[1] = 1
+		m.SongPlaybackRowInPhrase[1] = 0
+		m.SongPlaybackTicksLeft[1] = 10
+		
+		// Queue track 0 to stop
+		ToggleSingleTrackPlayback(m)
+		
+		assert.Equal(t, -1, m.SongPlaybackQueued[0], "Track 0 should be queued to stop")
+		assert.True(t, m.SongPlaybackActive[0], "Track 0 should still be active")
+		
+		// Advance playback - track 0 should loop and the queued stop should be processed
+		for i := 0; i < 50; i++ {
+			// Decrement ticks for both tracks
+			if m.SongPlaybackTicksLeft[0] > 0 {
+				m.SongPlaybackTicksLeft[0]--
+			}
+			if m.SongPlaybackTicksLeft[1] > 0 {
+				m.SongPlaybackTicksLeft[1]--
+			}
+			
+			// Advance playback when any track has 0 ticks
+			if m.SongPlaybackTicksLeft[0] == 0 || m.SongPlaybackTicksLeft[1] == 0 {
+				AdvancePlayback(m)
+				
+				// Check if track 0 was deactivated
+				if !m.SongPlaybackActive[0] {
+					assert.Equal(t, 0, m.SongPlaybackQueued[0], "Track 0 queue should be cleared after stopping")
+					return // Test passed
+				}
+			}
+		}
+		
+		// If we get here, the queued action was never processed
+		t.Fatal("Queued stop action was never processed after track 0 looped multiple times")
+	})
+}
+

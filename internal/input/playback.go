@@ -435,7 +435,8 @@ func AdvancePlayback(m *model.Model) {
 			oldSongRow := m.SongPlaybackRow[track]
 
 			// Now advance to next playable row for this track
-			if !advanceToNextPlayableRowForTrack(m, track) {
+			success, chainLooped := advanceToNextPlayableRowForTrack(m, track)
+			if !success {
 				// Track finished, deactivate
 				m.SongPlaybackActive[track] = false
 				m.SongPlaybackQueued[track] = 0 // Clear any queued action
@@ -445,10 +446,16 @@ func AdvancePlayback(m *model.Model) {
 
 			// Check if we advanced to a new song row (new chain)
 			newSongRow := m.SongPlaybackRow[track]
-			if newSongRow != oldSongRow {
-				// Track advanced to a new song row - this is a song-level cell boundary
+			
+			// Detect cell boundary: either song row changed OR chain looped back to beginning
+			if newSongRow != oldSongRow || chainLooped {
+				// Track advanced to a new song row OR chain looped back - this is a song-level cell boundary
 				anyTrackAtCellBoundary = true
-				log.Printf("SONG_CELL_BOUNDARY: Song track %d advanced from song row %02X to %02X (anyTrackAtCellBoundary=true)", track, oldSongRow, newSongRow)
+				if newSongRow != oldSongRow {
+					log.Printf("SONG_CELL_BOUNDARY: Song track %d advanced from song row %02X to %02X (anyTrackAtCellBoundary=true)", track, oldSongRow, newSongRow)
+				} else {
+					log.Printf("SONG_CELL_BOUNDARY: Song track %d chain looped back to beginning at song row %02X (anyTrackAtCellBoundary=true)", track, oldSongRow)
+				}
 
 				// Check for queued stop action at SONG cell boundary (after finishing current chain)
 				if m.SongPlaybackQueued[track] == -1 {
@@ -644,10 +651,12 @@ func AdvancePlayback(m *model.Model) {
 }
 
 // advanceToNextPlayableRowForTrack advances a track to its next playable row
-// Returns true if successful, false if track should be stopped
-func advanceToNextPlayableRowForTrack(m *model.Model, track int) bool {
+// Returns (success, chainLooped) where:
+// - success: true if track advanced to a valid row, false if track should stop
+// - chainLooped: true if chain completed and looped back to beginning (even on same song row)
+func advanceToNextPlayableRowForTrack(m *model.Model, track int) (bool, bool) {
 	if track < 0 || track >= 8 {
-		return false
+		return false, false
 	}
 
 	// Try to advance within current phrase first
@@ -659,7 +668,7 @@ func advanceToNextPlayableRowForTrack(m *model.Model, track int) bool {
 			if dtValue >= 1 {
 				m.SongPlaybackRowInPhrase[track] = i
 				log.Printf("Song track %d advanced within phrase to row %d", track, i)
-				return true
+				return true, false
 			}
 		}
 	}
@@ -675,12 +684,13 @@ func advanceToNextPlayableRowForTrack(m *model.Model, track int) bool {
 			m.SongPlaybackPhrase[track] = phraseID
 			if findFirstPlayableRowInPhraseForTrack(m, phraseID, track) {
 				log.Printf("Song track %d advanced to chain row %d, phrase %02X", track, chainRow, phraseID)
-				return true
+				return true, false
 			}
 		}
 	}
 
 	// End of chain reached, find next valid song row
+	// This means the chain has completed - we'll mark this as a loop-back
 	startSearchRow := m.SongPlaybackRow[track] + 1
 	for searchOffset := 0; searchOffset < 16; searchOffset++ {
 		searchRow := (startSearchRow + searchOffset) % 16
@@ -699,7 +709,8 @@ func advanceToNextPlayableRowForTrack(m *model.Model, track int) bool {
 						m.SongPlaybackChainRow[track] = chainRow
 						m.SongPlaybackPhrase[track] = phraseID
 						log.Printf("Song track %d advanced to song row %02X, chain %02X", track, searchRow, chainID)
-						return true
+						// Return chainLooped=true since we completed the previous chain
+						return true, true
 					}
 				}
 			}
@@ -707,7 +718,7 @@ func advanceToNextPlayableRowForTrack(m *model.Model, track int) bool {
 	}
 
 	// No valid sequences found, track should stop
-	return false
+	return false, false
 }
 
 // findFirstPlayableRowInPhraseForTrack finds the first playable row in a phrase for a track
