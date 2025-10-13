@@ -354,6 +354,9 @@ func TestQueuedActionWithSingleRowSongTrack(t *testing.T) {
 	// This is the bug fix: when a chain loops back to its beginning (stays on same song row),
 	// queued actions should still be processed
 	
+	// Max iterations prevents infinite loop in case of test failure
+	const maxIterations = 50
+	
 	t.Run("Queued start action triggered when chain loops back to beginning", func(t *testing.T) {
 		m := model.NewModel(0, "test.json", false)
 		m.ViewMode = types.SongView
@@ -394,8 +397,6 @@ func TestQueuedActionWithSingleRowSongTrack(t *testing.T) {
 		
 		// Now simulate track 1 advancing through its phrase until it loops
 		// This should trigger queued actions
-		// Max iterations prevents infinite loop in case of test failure
-		const maxIterations = 50
 		for i := 0; i < maxIterations; i++ {
 			// Decrement ticks for track 1
 			if m.SongPlaybackTicksLeft[1] > 0 {
@@ -458,8 +459,6 @@ func TestQueuedActionWithSingleRowSongTrack(t *testing.T) {
 		assert.True(t, m.SongPlaybackActive[0], "Track 0 should still be active")
 		
 		// Advance playback - track 0 should loop and the queued stop should be processed
-		// Max iterations prevents infinite loop in case of test failure
-		const maxIterations = 50
 		for i := 0; i < maxIterations; i++ {
 			// Decrement ticks for both tracks
 			if m.SongPlaybackTicksLeft[0] > 0 {
