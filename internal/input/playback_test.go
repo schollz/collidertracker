@@ -394,7 +394,9 @@ func TestQueuedActionWithSingleRowSongTrack(t *testing.T) {
 		
 		// Now simulate track 1 advancing through its phrase until it loops
 		// This should trigger queued actions
-		for i := 0; i < 50; i++ {
+		// Max iterations prevents infinite loop in case of test failure
+		const maxIterations = 50
+		for i := 0; i < maxIterations; i++ {
 			// Decrement ticks for track 1
 			if m.SongPlaybackTicksLeft[1] > 0 {
 				m.SongPlaybackTicksLeft[1]--
@@ -456,7 +458,9 @@ func TestQueuedActionWithSingleRowSongTrack(t *testing.T) {
 		assert.True(t, m.SongPlaybackActive[0], "Track 0 should still be active")
 		
 		// Advance playback - track 0 should loop and the queued stop should be processed
-		for i := 0; i < 50; i++ {
+		// Max iterations prevents infinite loop in case of test failure
+		const maxIterations = 50
+		for i := 0; i < maxIterations; i++ {
 			// Decrement ticks for both tracks
 			if m.SongPlaybackTicksLeft[0] > 0 {
 				m.SongPlaybackTicksLeft[0]--
