@@ -427,7 +427,7 @@ func TestSplashAnimationProgression(t *testing.T) {
 		
 		// Check that content increases with progression
 		if expectedProgress > 0.3 {
-			// Should contain loading text
+			// Should contain initialization text
 			assert.Contains(t, view, "initializing")
 		}
 		
@@ -444,7 +444,7 @@ func TestSplashEnhancedFeatures(t *testing.T) {
 	view := RenderSplashScreen(120, 35, splash, "v1.0.0")
 	assert.NotEmpty(t, view)
 	
-	// The enhanced version should have more lines due to increased maxLines (7 vs 5)
+	// The enhanced version should have more animation lines
 	lines := strings.Split(view, "\n")
 	assert.Greater(t, len(lines), 20, "Enhanced version should have more animation lines")
 	
