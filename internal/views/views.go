@@ -88,8 +88,31 @@ func RenderHeader(m *model.Model, leftContent, rightContent string) string {
 		waveWidth = 1
 	}
 
+	// Select waveform data based on current view and track context
+	var waveformData []float64
+
+	// Determine which track's waveform to display
+	trackIndex := -1
+	switch m.ViewMode {
+	case types.SongView:
+		// In Song View, use the track under the cursor
+		trackIndex = m.CurrentCol
+	case types.ChainView, types.PhraseView, types.RetriggerView, types.TimestrechView,
+	     types.ModulateView, types.ArpeggioView, types.MidiView, types.SoundMakerView,
+	     types.DuckingView, types.MixerView:
+		// In Chain/Phrase/Settings views, use CurrentTrack
+		trackIndex = m.CurrentTrack
+	}
+
+	// Get the appropriate waveform buffer
+	if trackIndex >= 0 && trackIndex < 8 {
+		waveformData = m.TrackWaveformBuf[trackIndex]
+	} else {
+		// Fall back to summed waveform for other views
+		waveformData = m.WaveformBuf
+	}
+
 	// If no waveform data available, create a simple test pattern to show the waveform area
-	waveformData := m.WaveformBuf
 	if len(waveformData) == 0 {
 		// Generate a simple sine wave for display when no OSC data is available
 		testLength := waveWidth * 2 / 3
