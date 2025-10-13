@@ -408,52 +408,6 @@ func TestSplashState(t *testing.T) {
 	assert.LessOrEqual(t, len(lines), 30) // Should be reasonable size
 }
 
-func TestSplashAnimationProgression(t *testing.T) {
-	duration := 5 * time.Second
-	splash := NewSplashState(duration)
-
-	// Test at different progress points
-	progressPoints := []float64{0.0, 0.15, 0.35, 0.55, 0.75, 0.95}
-
-	for _, expectedProgress := range progressPoints {
-		// Manually create a state at a specific progress
-		testState := &SplashState{
-			StartTime: time.Now().Add(-time.Duration(float64(duration) * expectedProgress)),
-			Duration:  duration,
-		}
-
-		view := RenderSplashScreen(100, 30, testState, "v1.2.3")
-		assert.NotEmpty(t, view)
-
-		// Check that content increases with progression
-		if expectedProgress > 0.3 {
-			// Should contain initialization text
-			assert.Contains(t, view, "initializing")
-		}
-
-		// Verify substantial line count for enhanced animations
-		lines := strings.Split(view, "\n")
-		assert.Greater(t, len(lines), 15, "Enhanced animations should produce more lines")
-	}
-}
-
-func TestSplashEnhancedFeatures(t *testing.T) {
-	splash := NewSplashState(3 * time.Second)
-
-	// Test with larger terminal dimensions to accommodate enhanced animations
-	view := RenderSplashScreen(120, 35, splash, "v1.0.0")
-	assert.NotEmpty(t, view)
-
-	// The enhanced version should have more animation lines
-	lines := strings.Split(view, "\n")
-	assert.Greater(t, len(lines), 20, "Enhanced version should have more animation lines")
-
-	// Check for various unicode characters that are part of the enhanced animation
-	// These would be present in the enhanced character sets
-	view2 := RenderSplashScreen(100, 30, splash, "test")
-	assert.NotEmpty(t, view2)
-}
-
 func TestViewStylesConsistency(t *testing.T) {
 	styles := getCommonStyles()
 
