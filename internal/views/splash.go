@@ -115,7 +115,11 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 			titleText = strings.Repeat(" ", titleScale) + titleText + strings.Repeat(" ", titleScale)
 		}
 
-		titleLine := titleStyleEnhanced.Width(termWidth).Render(titleText)
+		// Add side decorations
+		leftDecor, rightDecor := renderSideDecorations(progress, 0)
+		titleTextWithDecor := leftDecor + titleText + rightDecor
+
+		titleLine := titleStyleEnhanced.Width(termWidth).Render(titleTextWithDecor)
 		content.WriteString(titleLine)
 		content.WriteString("\n")
 	}
@@ -143,7 +147,11 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 			subtitleStyleEnhanced = subtitleStyleEnhanced.Foreground(lipgloss.Color("14"))
 		}
 
-		subtitleLine := subtitleStyleEnhanced.Width(termWidth).Render(displayText)
+		// Add side decorations
+		leftDecor, rightDecor := renderSideDecorations(progress, 1)
+		displayTextWithDecor := leftDecor + displayText + rightDecor
+
+		subtitleLine := subtitleStyleEnhanced.Width(termWidth).Render(displayTextWithDecor)
 		content.WriteString(subtitleLine)
 		content.WriteString("\n")
 	}
@@ -174,7 +182,11 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 			urlStyleEnhanced = urlStyleEnhanced.Bold(true)
 		}
 
-		urlLine := urlStyleEnhanced.Width(termWidth).Render(displayURL)
+		// Add side decorations
+		leftDecor, rightDecor := renderSideDecorations(progress, 2)
+		displayURLWithDecor := leftDecor + displayURL + rightDecor
+
+		urlLine := urlStyleEnhanced.Width(termWidth).Render(displayURLWithDecor)
 		content.WriteString(urlLine)
 		content.WriteString("\n")
 	}
@@ -204,7 +216,11 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 			versionStyleEnhanced = versionStyleEnhanced.Foreground(lipgloss.Color("8"))
 		}
 
-		versionLine := versionStyleEnhanced.Width(termWidth).Render(versionText)
+		// Add side decorations
+		leftDecor, rightDecor := renderSideDecorations(progress, 3)
+		versionTextWithDecor := leftDecor + versionText + rightDecor
+
+		versionLine := versionStyleEnhanced.Width(termWidth).Render(versionTextWithDecor)
 		content.WriteString(versionLine)
 		content.WriteString("\n")
 	}
@@ -237,7 +253,11 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 			loadingStyleEnhanced = loadingStyleEnhanced.Foreground(lipgloss.Color("42"))
 		}
 
-		loadingLine := loadingStyleEnhanced.Width(termWidth).Render(loadingText)
+		// Add side decorations
+		leftDecor, rightDecor := renderSideDecorations(progress, 4)
+		loadingTextWithDecor := leftDecor + loadingText + rightDecor
+
+		loadingLine := loadingStyleEnhanced.Width(termWidth).Render(loadingTextWithDecor)
 		content.WriteString(loadingLine)
 		content.WriteString("\n")
 
@@ -270,9 +290,18 @@ func RenderSplashScreen(termWidth, termHeight int, state *SplashState, version s
 		}
 	}
 
+	// Add animations below the text as well
+	content.WriteString("\n")
+	blocksLineBelow := renderAnimatedBlocks(centerX, progress)
+	content.WriteString(blocksLineBelow)
+	content.WriteString("\n")
+
 	// Fill remaining space
-	for i := centerY + 4; i < termHeight-1; i++ {
-		content.WriteString("\n")
+	remainingLines := termHeight - centerY - 12 // Adjust for text and bottom animation
+	if remainingLines > 0 {
+		for i := 0; i < remainingLines; i++ {
+			content.WriteString("\n")
+		}
 	}
 
 	return content.String()
@@ -695,6 +724,55 @@ func renderSupportLine(centerX, lineIdx, maxLines int, phase1, phase2, phase3, p
 	}
 
 	return line.String()
+}
+
+// renderSideDecorations creates decorative particles on the sides of text lines
+func renderSideDecorations(progress float64, lineOffset int) (string, string) {
+	termTime := time.Now().UnixMilli()
+
+	// Decoration characters that appear on sides
+	decorChars := []string{"◦", "•", "◘", "○", "◎", "◉", "✦", "✧", "✨", "⬟", "⬢", "⬡"}
+
+	var leftDecor, rightDecor string
+
+	// Only show decorations after initial phase
+	if progress > 0.15 {
+		decorProgress := math.Min((progress-0.15)/0.2, 1.0)
+
+		// Calculate which decorations to show based on progress and time
+		seed := float64(lineOffset*13 + int(termTime/180))
+
+		// Pulsing effect
+		pulse := math.Sin(float64(termTime)/100.0 + seed)
+
+		if pulse > -0.3 && decorProgress > 0.3 {
+			// Left decoration
+			leftIdx := int(math.Abs(math.Sin(seed)) * float64(len(decorChars)))
+			if leftIdx >= len(decorChars) {
+				leftIdx = len(decorChars) - 1
+			}
+
+			// Right decoration (different from left)
+			rightIdx := int(math.Abs(math.Cos(seed*1.3)) * float64(len(decorChars)))
+			if rightIdx >= len(decorChars) {
+				rightIdx = len(decorChars) - 1
+			}
+
+			// Color cycling
+			colors := []string{"51", "87", "123", "159", "195", "226", "220", "214"}
+			colorIdx := int(math.Abs(math.Sin(float64(termTime)/150.0+seed)) * float64(len(colors)))
+			if colorIdx >= len(colors) {
+				colorIdx = len(colors) - 1
+			}
+			color := colors[colorIdx]
+
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
+			leftDecor = style.Render(decorChars[leftIdx]) + " "
+			rightDecor = " " + style.Render(decorChars[rightIdx])
+		}
+	}
+
+	return leftDecor, rightDecor
 }
 
 // Easing functions for smooth animations
