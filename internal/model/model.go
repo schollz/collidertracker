@@ -2058,7 +2058,7 @@ func (m *Model) SendOSCTrackSetLevelMessage(trackNum int) {
 	m.sendOSCMessage(config)
 }
 
-func (m *Model) SendOSCRecordMessage(filename string, recording bool, trackMask uint8) {
+func (m *Model) SendOSCRecordMessage(filename string, recording bool, trackMask uint16) {
 	recordingInt := int32(0)
 	if recording {
 		recordingInt = 1
@@ -2242,8 +2242,8 @@ func (m *Model) skipInvalidDTRowsForTrack(track int) bool {
 }
 
 // GetRecordingTrackMask determines which tracks should be recorded based on current view and playback state
-func (m *Model) GetRecordingTrackMask(fromSongView bool, fromCtrlSpace bool) uint8 {
-	var trackMask uint8 = 0
+func (m *Model) GetRecordingTrackMask(fromSongView bool, fromCtrlSpace bool) uint16 {
+	var trackMask uint16 = 0
 
 	if fromCtrlSpace || (fromSongView && m.ViewMode == types.SongView) {
 		// Ctrl+Space or Space in Song view: record all tracks that have data
@@ -2258,6 +2258,9 @@ func (m *Model) GetRecordingTrackMask(fromSongView bool, fromCtrlSpace bool) uin
 			trackMask = 1 << m.CurrentTrack
 		}
 	}
+
+	// Always include track 8 (external input, displayed as Track 9) for multitrack recording
+	trackMask |= (1 << 8)
 
 	return trackMask
 }

@@ -1102,7 +1102,7 @@ Routine{
     			}));
     			NodeWatcher.register(~synthRecord.at(filename));
     			// create recorders only for enabled tracks (based on track mask)
-    			8.do({ arg track;
+    			9.do({ arg track;
     				var enabled = isTrackEnabled.(track);
     				if (enabled, {
     					var trackRecordingBuffer=Buffer.alloc(Server.default,65536,2);

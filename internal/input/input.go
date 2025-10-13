@@ -1773,7 +1773,7 @@ func startRecordingWithContext(m *model.Model, fromSongView bool, fromCtrlSpace 
 
 	// Send OSC message to start recording with track mask
 	m.SendOSCRecordMessage(filename, true, trackMask)
-	log.Printf("Recording started: %s (tracks: 0x%02X)", filename, trackMask)
+	log.Printf("Recording started: %s (tracks: 0x%04X)", filename, trackMask)
 }
 
 func stopRecording(m *model.Model) {

@@ -96,7 +96,7 @@ func DoSave(m *model.Model) {
 		LastChainRow:               m.LastChainRow,
 		LastPhraseRow:              m.LastPhraseRow,
 		LastPhraseCol:              m.LastPhraseCol,
-		RecordingEnabled:           m.RecordingEnabled,
+		RecordingEnabled:           false, // Never save recording state - user must re-enable each session
 		RetriggerSettings:          m.RetriggerSettings,
 		TimestrechSettings:         m.TimestrechSettings,
 		InstrumentModulateSettings: m.InstrumentModulateSettings,
@@ -206,7 +206,7 @@ func LoadState(m *model.Model, oscPort int, saveFolder string) error {
 	m.LastChainRow = saveData.LastChainRow
 	m.LastPhraseRow = saveData.LastPhraseRow
 	m.LastPhraseCol = saveData.LastPhraseCol
-	m.RecordingEnabled = saveData.RecordingEnabled
+	// Don't restore RecordingEnabled - user must re-enable each session
 	m.RetriggerSettings = saveData.RetriggerSettings
 	m.TimestrechSettings = saveData.TimestrechSettings
 	m.DuckingSettings = saveData.DuckingSettings
