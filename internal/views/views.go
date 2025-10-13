@@ -98,8 +98,8 @@ func RenderHeader(m *model.Model, leftContent, rightContent string) string {
 		// In Song View, use the track under the cursor
 		trackIndex = m.CurrentCol
 	case types.ChainView, types.PhraseView, types.RetriggerView, types.TimestrechView,
-	     types.ModulateView, types.ArpeggioView, types.MidiView, types.SoundMakerView,
-	     types.DuckingView, types.MixerView:
+		types.ModulateView, types.ArpeggioView, types.MidiView, types.SoundMakerView,
+		types.DuckingView, types.MixerView:
 		// In Chain/Phrase/Settings views, use CurrentTrack
 		trackIndex = m.CurrentTrack
 	}
