@@ -662,6 +662,18 @@ Routine{
     			Mix.new(In.ar(track7Bus,2)),
     			Mix.new(In.ar(track8Bus,2)),
     		],0.3,0.3).max(0.00001).ampdb,3)]);
+			// Send out /track_waveform message with the normalized waveform of each track 
+			SendReply.kr(Impulse.kr(30),'/track_waveform',[
+				Normalizer.ar(LPF.ar(In.ar(track0Bus,2)[0],60))*(Amplitude.kr(In.ar(track0Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track1Bus,2)[0],60))*(Amplitude.kr(In.ar(track1Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track2Bus,2)[0],60))*(Amplitude.kr(In.ar(track2Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track3Bus,2)[0],60))*(Amplitude.kr(In.ar(track3Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track4Bus,2)[0],60))*(Amplitude.kr(In.ar(track4Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track5Bus,2)[0],60))*(Amplitude.kr(In.ar(track5Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track6Bus,2)[0],60))*(Amplitude.kr(In.ar(track6Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track7Bus,2)[0],60))*(Amplitude.kr(In.ar(track7Bus,2)[0]).ampdb>70.neg),
+				Normalizer.ar(LPF.ar(In.ar(track8Bus,2)[0],60))*(Amplitude.kr(In.ar(track8Bus,2)[0]).ampdb>70.neg),
+			]);
 
     		// add in comb
     		snd = snd + ((0.5*sndComb)+
@@ -688,7 +700,7 @@ Routine{
     		)]);
     		snd = snd * Lag.kr(volumeDB).dbamp * Lag.kr(postgain).dbamp;
 
-    		SendReply.kr(Impulse.kr(30),'/waveform',Normalizer.ar(LPF.ar(snd,60)));
+    		SendReply.kr(Impulse.kr(30),'/waveform',Normalizer.ar(LPF.ar(snd[0],60))*(Amplitude.kr(snd[0]).ampdb>70.neg));
     		ReplaceOut.ar(0,snd);
     		Out.ar(busDisk, snd);
     	}).add;
@@ -1053,6 +1065,9 @@ Routine{
     	OSCFunc({ |msg|
     		NetAddr.new("127.0.0.1", 57121).sendMsg("/track_volume", *msg[3..]);
     	},'/track_volume');
+		OSCFunc({ |msg|
+			NetAddr.new("127.0.0.1", 57121).sendMsg("/track_waveform", *msg[3..]);
+    	},'/track_waveform');
     	OSCFunc({ |msg|
     		var filename = msg[1].asString;
     		var doRecord = msg[2].asInteger;

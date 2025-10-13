@@ -77,10 +77,11 @@ type Model struct {
 	lastPlaybackFileIdx  int    // Last non-null filename index during playback
 	lastPlaybackFilename string // Last non-null filename during playback
 	// OSC client configuration
-	oscClient    *osc.Client
-	oscPort      int
-	LastWaveform float64   // Last waveform value received from OSC
-	WaveformBuf  []float64 // Buffer for waveform data
+	oscClient        *osc.Client
+	oscPort          int
+	LastWaveform     float64      // Last waveform value received from OSC
+	WaveformBuf      []float64    // Buffer for waveform data
+	TrackWaveformBuf [8][]float64 // Per-track waveform buffers
 	// File browser playback state
 	CurrentlyPlayingFile string // Track which file is currently playing in file browser
 	// File metadata management
@@ -2084,6 +2085,19 @@ func (m *Model) GenerateRecordingFilename() string {
 	return fmt.Sprintf("%04d-%02d-%02d-%02d-%02d-%02d.wav",
 		now.Year(), now.Month(), now.Day(),
 		now.Hour(), now.Minute(), now.Second())
+}
+
+func (m *Model) PushTrackWaveformSample(track int, v float64, maxCols int) {
+	if track < 0 || track >= 8 {
+		return
+	}
+	// keep just enough points to draw across the current width
+	// we draw one "dot column" per half braille cell, so keep 2*maxCols
+	target := maxCols
+	m.TrackWaveformBuf[track] = append(m.TrackWaveformBuf[track], v)
+	if len(m.TrackWaveformBuf[track]) > target {
+		m.TrackWaveformBuf[track] = m.TrackWaveformBuf[track][len(m.TrackWaveformBuf[track])-target:]
+	}
 }
 
 func (m *Model) PushWaveformSample(v float64, maxCols int) {

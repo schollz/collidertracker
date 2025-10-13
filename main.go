@@ -524,6 +524,18 @@ func initialModel(oscPort int, saveFolder string, vimMode bool, dispatcher *osc.
 		}
 		m.PushWaveformSample(sample, maxCols*2/3)
 	})
+	// Add track waveform handler to the existing OSC dispatcher
+	dispatcher.AddMsgHandler("/track_waveform", func(msg *osc.Message) {
+		// available content width inside the padded container (2 spaces each side)
+		maxCols := m.TermWidth - 4
+		if maxCols < 1 {
+			maxCols = 1
+		}
+		maxCols = maxCols * 2 / 3
+		for i := 0; i < len(m.TrackWaveformBuf); i++ {
+			m.PushTrackWaveformSample(i, float64(msg.Arguments[i].(float32)), maxCols)
+		}
+	})
 
 	m.AvailableMidiDevices = midiconnector.Devices()
 	for _, device := range m.AvailableMidiDevices {
