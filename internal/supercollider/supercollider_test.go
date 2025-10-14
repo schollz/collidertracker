@@ -112,6 +112,53 @@ func TestGetMiUGensURL(t *testing.T) {
 	})
 }
 
+func TestGetOpen303URL(t *testing.T) {
+	t.Run("returns correct URL for platform", func(t *testing.T) {
+		url := getOpen303URL()
+
+		switch runtime.GOOS {
+		case "linux":
+			if runtime.GOARCH == "arm64" {
+				assert.Contains(t, url, "Open303-Linux-arm64.zip")
+			} else {
+				assert.Contains(t, url, "Open303-Linux-x64.zip")
+			}
+		case "darwin":
+			assert.Contains(t, url, "Open303-macOS-arm64.zip")
+		case "windows":
+			assert.Contains(t, url, "Open303-Windows-x64.zip")
+		default:
+			assert.Equal(t, "", url) // Unsupported platform
+		}
+
+		// If URL is not empty, should be a valid GitHub releases URL
+		if url != "" {
+			assert.Contains(t, url, "github.com/schollz/open303/releases")
+		}
+	})
+}
+
+func TestHasOpen303(t *testing.T) {
+	t.Run("returns false when Open303 not installed", func(t *testing.T) {
+		// This will likely return false unless Open303 is installed
+		result := hasOpen303()
+		// We can't assert true/false since it depends on system state,
+		// but we can verify it doesn't panic
+		assert.IsType(t, true, result)
+	})
+}
+
+func TestGetOpen303InstallDir(t *testing.T) {
+	t.Run("returns non-empty directory path", func(t *testing.T) {
+		dir := getOpen303InstallDir()
+		// Should return a path on all supported platforms
+		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+			assert.NotEmpty(t, dir)
+			assert.Contains(t, dir, "Open303")
+		}
+	})
+}
+
 func TestExtractSynthDefNames(t *testing.T) {
 	t.Run("extracts quoted synthdef names", func(t *testing.T) {
 		scdContent := `

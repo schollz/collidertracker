@@ -38,6 +38,7 @@ The following extensions are automatically downloaded:
 
 - **PortedPlugins** ([schollz/portedplugins](https://github.com/schollz/portedplugins)) - Audio effects including Fverb and AnalogTape
 - **mi-UGens** ([v7b1/mi-UGens](https://github.com/v7b1/mi-UGens)) - Mutable Instruments synthesizer modules including MiBraids
+- **Open303** ([schollz/open303](https://github.com/schollz/open303)) - TB-303 bassline synthesizer emulator
 
 ### Checking the SuperCollider Installation Worked
 
@@ -586,9 +587,9 @@ To completely remove all ColliderTracker-related data from your system:
 
 ColliderTracker automatically downloads SuperCollider extensions to the following locations:
 
-- **macOS**: Remove `~/Library/Application Support/SuperCollider/Extensions/PortedPlugins/` and `~/Library/Application Support/SuperCollider/Extensions/mi-UGens/`
-- **Linux**: Remove `~/.local/share/SuperCollider/Extensions/PortedPlugins/` and `~/.local/share/SuperCollider/Extensions/mi-UGens/`
-- **Windows**: Remove `%LOCALAPPDATA%/SuperCollider/Extensions/PortedPlugins/` and `%LOCALAPPDATA%/SuperCollider/Extensions/mi-UGens/`
+- **macOS**: Remove `~/Library/Application Support/SuperCollider/Extensions/PortedPlugins/`, `~/Library/Application Support/SuperCollider/Extensions/mi-UGens/`, and `~/Library/Application Support/SuperCollider/Extensions/Open303/`
+- **Linux**: Remove `~/.local/share/SuperCollider/Extensions/PortedPlugins/`, `~/.local/share/SuperCollider/Extensions/mi-UGens/`, and `~/.local/share/SuperCollider/Extensions/Open303/`
+- **Windows**: Remove `%LOCALAPPDATA%/SuperCollider/Extensions/PortedPlugins/`, `%LOCALAPPDATA%/SuperCollider/Extensions/mi-UGens/`, and `%LOCALAPPDATA%/SuperCollider/Extensions/Open303/`
 
 **Note**: These extensions may also be used by other SuperCollider applications. Only remove them if you're sure they're not needed by other software.
 

@@ -389,6 +389,12 @@ func HasRequiredExtensions() bool {
 			return false
 		}
 	}
+	
+	// Also check for Open303
+	if !hasOpen303() {
+		return false
+	}
+	
 	return true
 }
 
@@ -512,6 +518,30 @@ func DownloadRequiredExtensions() error {
 		fmt.Println("mi-UGens downloaded successfully")
 	}
 
+	// Check for Open303
+	if !hasOpen303() {
+		fmt.Println("Downloading Open303...")
+		downloadURL := getOpen303URL()
+		if downloadURL == "" {
+			return fmt.Errorf("unsupported platform for Open303: %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
+
+		open303Dir := getOpen303InstallDir()
+		if open303Dir == "" {
+			return fmt.Errorf("could not determine Open303 installation directory")
+		}
+
+		// Create Open303 directory if it doesn't exist
+		if err := os.MkdirAll(open303Dir, 0755); err != nil {
+			return fmt.Errorf("failed to create Open303 directory: %v", err)
+		}
+
+		if err := downloadAndExtractOpen303(downloadURL, open303Dir); err != nil {
+			return fmt.Errorf("failed to download Open303: %v", err)
+		}
+		fmt.Println("Open303 downloaded successfully")
+	}
+
 	if HasRequiredExtensions() {
 		fmt.Println("All required extensions are now available")
 		return nil
@@ -548,6 +578,64 @@ func getMiUGensURL() string {
 		return "https://github.com/v7b1/mi-UGens/releases/download/v0.0.8/mi-UGens-Windows.zip"
 	}
 	return ""
+}
+
+func getOpen303URL() string {
+	// Using the latest release from https://github.com/schollz/open303
+	const baseURL = "https://github.com/schollz/open303/releases/latest/download/"
+	
+	switch runtime.GOOS {
+	case "linux":
+		if runtime.GOARCH == "arm64" {
+			return baseURL + "Open303-Linux-arm64.zip"
+		}
+		return baseURL + "Open303-Linux-x64.zip"
+	case "darwin":
+		if runtime.GOARCH == "arm64" {
+			return baseURL + "Open303-macOS-arm64.zip"
+		}
+		// x64 macOS - use arm64 as it will work via Rosetta
+		return baseURL + "Open303-macOS-arm64.zip"
+	case "windows":
+		return baseURL + "Open303-Windows-x64.zip"
+	}
+	return ""
+}
+
+func getOpen303InstallDir() string {
+	switch runtime.GOOS {
+	case "darwin":
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(homeDir, "Library/Application Support/SuperCollider/Extensions/Open303")
+		}
+	case "linux":
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(homeDir, ".local/share/SuperCollider/Extensions/Open303")
+		}
+	case "windows":
+		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+			return filepath.Join(localAppData, "SuperCollider/Extensions/Open303")
+		}
+	}
+	return ""
+}
+
+func hasOpen303() bool {
+	installDir := getOpen303InstallDir()
+	if installDir == "" {
+		return false
+	}
+	
+	// Check for the Open303 executable
+	var execName string
+	if runtime.GOOS == "windows" {
+		execName = "Open303.exe"
+	} else {
+		execName = "Open303"
+	}
+	
+	execPath := filepath.Join(installDir, execName)
+	return fileExists(execPath)
 }
 
 func getLocalExtensionDir() string {
@@ -633,6 +721,100 @@ func extractZip(src, dest string) error {
 
 		// Create destination file
 		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.FileInfo().Mode())
+		if err != nil {
+			rc.Close()
+			return fmt.Errorf("failed to create destination file: %v", err)
+		}
+
+		// Copy file contents
+		_, err = io.Copy(destFile, rc)
+		destFile.Close()
+		rc.Close()
+
+		if err != nil {
+			return fmt.Errorf("failed to copy file contents: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func downloadAndExtractOpen303(url, destDir string) error {
+	// Download the file
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("failed to download %s: %v", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download %s: status %d", url, resp.StatusCode)
+	}
+
+	// Create temporary file
+	tmpFile, err := os.CreateTemp("", "open303-*.zip")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	// Copy response body to temp file
+	_, err = io.Copy(tmpFile, resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to save downloaded file: %v", err)
+	}
+
+	// Close temp file before reading
+	tmpFile.Close()
+
+	// Extract zip file and set executable permissions
+	if err := extractZipWithExecutable(tmpFile.Name(), destDir, "Open303"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func extractZipWithExecutable(src, dest, executableName string) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return fmt.Errorf("failed to open zip file: %v", err)
+	}
+	defer r.Close()
+
+	// Create destination directory
+	os.MkdirAll(dest, 0755)
+
+	for _, f := range r.File {
+		// Create the directories for this file
+		destPath := filepath.Join(dest, f.Name)
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(destPath, f.FileInfo().Mode())
+			continue
+		}
+
+		// Create the directories for this file
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return fmt.Errorf("failed to create directory: %v", err)
+		}
+
+		// Open file in zip
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("failed to open file in zip: %v", err)
+		}
+
+		// Determine file mode - make executable if it's the main binary
+		fileMode := f.FileInfo().Mode()
+		if strings.Contains(f.Name, executableName) {
+			// Make executable for owner, group, and others (0755)
+			fileMode = 0755
+		}
+
+		// Create destination file
+		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fileMode)
 		if err != nil {
 			rc.Close()
 			return fmt.Errorf("failed to create destination file: %v", err)
