@@ -915,6 +915,87 @@ var InstrumentRegistry = map[string]InstrumentDefinition{
 			},
 		},
 	},
+	"Open303": {
+		Name:        "Open303",
+		Description: "Open-source 303 bassline synthesizer",
+		Parameters: []InstrumentParameterDef{
+			{
+				Key: "waveform", DisplayName: "Waveform", Type: ParameterTypeFloat,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Default: 0.5, Column: 0, Order: 0,
+				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
+			},
+			{
+				Key: "tuning", DisplayName: "Tuning", Type: ParameterTypeFloat,
+				MinValue: 110, MaxValue: 880, DefaultValue: 440, Default: 440, Column: 0, Order: 1,
+				CoarseStep: 10, FineStep: 1, DisplayFormat: "%.0f Hz",
+			},
+			{
+				Key: "resonance", DisplayName: "Resonance", Type: ParameterTypeFloat,
+				MinValue: 1, MaxValue: 200, DefaultValue: 50, Default: 50, Column: 0, Order: 2,
+				CoarseStep: 10, FineStep: 1, DisplayFormat: "%.0f%%",
+			},
+			{
+				Key: "envMod", DisplayName: "Env Mod", Type: ParameterTypeFloat,
+				MinValue: 0, MaxValue: 100, DefaultValue: 50, Default: 50, Column: 0, Order: 3,
+				CoarseStep: 10, FineStep: 1, DisplayFormat: "%.0f",
+			},
+			{
+				Key: "decay", DisplayName: "Decay", Type: ParameterTypeFloat,
+				MinValue: 30, MaxValue: 3000, DefaultValue: 1000, Default: 1000, Column: 0, Order: 4,
+				CoarseStep: 100, FineStep: 10, DisplayFormat: "%.0f ms",
+			},
+			{
+				Key: "accent", DisplayName: "Accent", Type: ParameterTypeFloat,
+				MinValue: 0, MaxValue: 100, DefaultValue: 50, Default: 50, Column: 0, Order: 5,
+				CoarseStep: 10, FineStep: 1, DisplayFormat: "%.0f",
+			},
+			{
+				Key: "baseVolume", DisplayName: "Volume", Type: ParameterTypeFloat,
+				MinValue: -60, MaxValue: 0, DefaultValue: -12, Default: -12, Column: 0, Order: 6,
+				CoarseStep: 6, FineStep: 1, DisplayFormat: "%.0f dB",
+			},
+			{
+				Key: "ampDecay", DisplayName: "Amp Decay", Type: ParameterTypeFloat,
+				MinValue: 30, MaxValue: 3000, DefaultValue: 1230, Default: 1230, Column: 1, Order: 0,
+				CoarseStep: 100, FineStep: 10, DisplayFormat: "%.0f ms",
+			},
+			{
+				Key: "ampRelease", DisplayName: "Amp Release", Type: ParameterTypeFloat,
+				MinValue: 1, MaxValue: 2000, DefaultValue: 1, Default: 1, Column: 1, Order: 1,
+				CoarseStep: 100, FineStep: 1, DisplayFormat: "%.0f ms",
+			},
+			{
+				Key: "feedbackHPF", DisplayName: "Feedback HPF", Type: ParameterTypeFloat,
+				MinValue: 20, MaxValue: 2000, DefaultValue: 150, Default: 150, Column: 1, Order: 2,
+				CoarseStep: 100, FineStep: 10, DisplayFormat: "%.0f",
+			},
+			{
+				Key: "normalAttack", DisplayName: "Normal Attack", Type: ParameterTypeFloat,
+				MinValue: 0.3, MaxValue: 30, DefaultValue: 3, Default: 3, Column: 1, Order: 3,
+				CoarseStep: 1, FineStep: 0.1, DisplayFormat: "%.1f",
+			},
+			{
+				Key: "accentAttack", DisplayName: "Accent Attack", Type: ParameterTypeFloat,
+				MinValue: 0.3, MaxValue: 30, DefaultValue: 3, Default: 3, Column: 1, Order: 4,
+				CoarseStep: 1, FineStep: 0.1, DisplayFormat: "%.1f",
+			},
+			{
+				Key: "accentDecay", DisplayName: "Accent Decay", Type: ParameterTypeFloat,
+				MinValue: 30, MaxValue: 3000, DefaultValue: 200, Default: 200, Column: 1, Order: 5,
+				CoarseStep: 100, FineStep: 10, DisplayFormat: "%.0f",
+			},
+			{
+				Key: "slideTime", DisplayName: "Slide Time", Type: ParameterTypeFloat,
+				MinValue: 0, MaxValue: 300, DefaultValue: 60, Default: 60, Column: 1, Order: 6,
+				CoarseStep: 10, FineStep: 1, DisplayFormat: "%.0f ms",
+			},
+			{
+				Key: "monophonic", DisplayName: "Monophonic", Type: ParameterTypeInt,
+				MinValue: 0, MaxValue: 1, DefaultValue: 0, Default: 0, Column: 1, Order: 7,
+				DisplayFormatter: FormatYesNo,
+			},
+		},
+	},
 }
 
 // Helper functions for the instrument framework
