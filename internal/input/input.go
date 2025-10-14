@@ -858,7 +858,33 @@ func handleUp(m *model.Model) tea.Cmd {
 		}
 	} else if m.ViewMode == types.SoundMakerView {
 		if m.CurrentRow > 0 {
-			m.CurrentRow = m.CurrentRow - 1
+			// Row 0 is the name row, rows 1+ are parameters
+			// When on a parameter row, check if we should stay within the current column
+			settings := m.SoundMakerSettings[m.SoundMakerEditingIndex]
+			if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
+				col0, col1 := def.GetParametersSortedByColumn()
+
+				// If we're in column 1 and at the first parameter in that column, go to name row
+				if m.CurrentCol == 1 && m.CurrentRow == 1 {
+					m.CurrentRow = 0 // Go to name row
+				} else if m.CurrentCol == 0 && m.CurrentRow == 1 {
+					m.CurrentRow = 0 // Go to name row
+				} else {
+					// Normal up navigation within the column
+					m.CurrentRow = m.CurrentRow - 1
+				}
+
+				// Make sure we don't go beyond the parameter count for this column
+				if m.CurrentCol == 0 && m.CurrentRow > len(col0) {
+					m.CurrentRow = len(col0)
+				} else if m.CurrentCol == 1 && m.CurrentRow > len(col1) {
+					m.CurrentRow = len(col1)
+				}
+			} else {
+				// No definition, just go up
+				m.CurrentRow = m.CurrentRow - 1
+			}
+
 			if m.CurrentRow < m.ScrollOffset {
 				m.ScrollOffset = m.CurrentRow
 			}
@@ -996,15 +1022,24 @@ func handleDown(m *model.Model) tea.Cmd {
 			}
 		}
 	} else if m.ViewMode == types.SoundMakerView {
-		// Calculate maximum row based on current instrument parameters
+		// Calculate maximum row based on current column's parameters
 		settings := m.SoundMakerSettings[m.SoundMakerEditingIndex]
 		var maxRow int
 		if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
-			// Name row (0) + parameter rows (1 to len(Parameters))
-			maxRow = len(def.Parameters) // Last valid row index
+			col0, col1 := def.GetParametersSortedByColumn()
+
+			// Determine max row based on current column
+			if m.CurrentCol == 0 {
+				maxRow = len(col0) // Number of parameters in column 0
+			} else if m.CurrentCol == 1 {
+				maxRow = len(col1) // Number of parameters in column 1
+			} else {
+				maxRow = 0 // Only name row if no column selected
+			}
 		} else {
 			maxRow = 0 // Only name row if no definition
 		}
+
 		if m.CurrentRow < maxRow {
 			m.CurrentRow = m.CurrentRow + 1
 			visibleRows := m.GetVisibleRows()
@@ -1129,7 +1164,20 @@ func handleLeft(m *model.Model) tea.Cmd {
 	} else if m.ViewMode == types.MidiView {
 		// No horizontal navigation in MIDI view - use up/down for settings
 	} else if m.ViewMode == types.SoundMakerView {
-		// No horizontal navigation in SoundMaker view - use up/down for settings
+		// Navigate to left column (column 0)
+		if m.CurrentCol > 0 {
+			m.CurrentCol = 0
+			// Adjust row if needed based on column 0 parameters
+			settings := m.SoundMakerSettings[m.SoundMakerEditingIndex]
+			if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
+				col0, _ := def.GetParametersSortedByColumn()
+				// If current row is beyond column 0's parameter count, adjust to last row in column 0
+				if m.CurrentRow > len(col0) {
+					m.CurrentRow = len(col0)
+				}
+			}
+			storage.AutoSave(m)
+		}
 	} else if m.ViewMode == types.SettingsView {
 		if m.CurrentCol > 0 { // Switch between Global (0) and Input (1) columns
 			m.CurrentCol = m.CurrentCol - 1
@@ -1205,7 +1253,20 @@ func handleRight(m *model.Model) tea.Cmd {
 	} else if m.ViewMode == types.MidiView {
 		// No horizontal navigation in MIDI view - use up/down for settings
 	} else if m.ViewMode == types.SoundMakerView {
-		// No horizontal navigation in SoundMaker view - use up/down for settings
+		// Navigate to right column (column 1)
+		settings := m.SoundMakerSettings[m.SoundMakerEditingIndex]
+		if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
+			_, col1 := def.GetParametersSortedByColumn()
+			// Only navigate right if there are parameters in column 1
+			if len(col1) > 0 && m.CurrentCol < 1 {
+				m.CurrentCol = 1
+				// Adjust row if current row exceeds column 1's parameter count
+				if m.CurrentRow > len(col1) {
+					m.CurrentRow = len(col1)
+				}
+				storage.AutoSave(m)
+			}
+		}
 	} else if m.ViewMode == types.SettingsView {
 		if m.CurrentCol < 1 { // Switch between Global (0) and Input (1) columns
 			m.CurrentCol = m.CurrentCol + 1
@@ -1891,10 +1952,17 @@ func handlePgDown(m *model.Model) tea.Cmd {
 		case types.MidiView:
 			maxRow = int(types.MidiSettingsRowChannel) + len(m.AvailableMidiDevices) // Settings + devices
 		case types.SoundMakerView:
-			// Calculate maximum row based on current instrument parameters
+			// Calculate maximum row based on current column's parameters
 			settings := m.SoundMakerSettings[m.SoundMakerEditingIndex]
 			if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
-				maxRow = len(def.Parameters) // Last valid row index
+				col0, col1 := def.GetParametersSortedByColumn()
+				if m.CurrentCol == 0 {
+					maxRow = len(col0)
+				} else if m.CurrentCol == 1 {
+					maxRow = len(col1)
+				} else {
+					maxRow = 0
+				}
 			} else {
 				maxRow = 0 // Only name row if no definition
 			}

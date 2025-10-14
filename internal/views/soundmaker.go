@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/schollz/collidertracker/internal/input"
@@ -9,6 +10,12 @@ import (
 	"github.com/schollz/collidertracker/internal/supercollider"
 	"github.com/schollz/collidertracker/internal/types"
 )
+
+// stripAnsiCodes removes ANSI escape codes from a string to measure actual text width
+func stripAnsiCodes(s string) string {
+	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	return ansiRegex.ReplaceAllString(s, "")
+}
 
 func GetSoundMakerStatusMessage(m *model.Model) string {
 	settings := m.SoundMakerSettings[m.SoundMakerEditingIndex]
@@ -21,10 +28,19 @@ func GetSoundMakerStatusMessage(m *model.Model) string {
 	} else {
 		// Check if we're on a parameter row
 		if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
+			// Get parameters for the current column
+			col0, col1 := def.GetParametersSortedByColumn()
+			var params []types.InstrumentParameterDef
+			if m.CurrentCol == 0 {
+				params = col0
+			} else {
+				params = col1
+			}
+
 			// Parameter rows start at row 1
 			paramIndex := m.CurrentRow - 1
-			if paramIndex >= 0 && paramIndex < len(def.Parameters) {
-				param := def.Parameters[paramIndex]
+			if paramIndex >= 0 && paramIndex < len(params) {
+				param := params[paramIndex]
 				value := settings.GetParameterValue(param.Key)
 
 				// Special handling for DX7 preset display
@@ -104,8 +120,11 @@ func RenderSoundMakerView(m *model.Model) string {
 		content.WriteString("\n")
 
 		if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
-			// Render all parameters in a single column, sorted by their original order
-			for i, param := range def.Parameters {
+			// Get parameters sorted by column
+			col0, col1 := def.GetParametersSortedByColumn()
+
+			// Helper function to render a parameter
+			renderParam := func(param types.InstrumentParameterDef, paramIndex int, currentCol int) string {
 				value := settings.GetParameterValue(param.Key)
 				var valueStr string
 
@@ -141,23 +160,60 @@ func RenderSoundMakerView(m *model.Model) string {
 					}
 				}
 
-				// Row index is i+1 because name is row 0
-				paramRowIndex := i + 1
 				var valueCell string
-				if m.CurrentRow == paramRowIndex {
+				// paramIndex is 1-based (row 1, 2, 3...), row 0 is the name
+				if m.CurrentRow == paramIndex && m.CurrentCol == currentCol {
 					valueCell = styles.Selected.Render(valueStr)
 				} else {
 					valueCell = styles.Normal.Render(valueStr)
 				}
 
-				row := fmt.Sprintf("  %-10s %s", styles.Label.Render(param.DisplayName+":"), valueCell)
-				content.WriteString(row)
+				return fmt.Sprintf("  %-10s %s", styles.Label.Render(param.DisplayName+":"), valueCell)
+			}
+
+			// Render parameters in two columns side by side
+			maxRows := len(col0)
+			if len(col1) > maxRows {
+				maxRows = len(col1)
+			}
+
+			const leftColWidth = 40 // Fixed width for left column
+
+			for i := 0; i < maxRows; i++ {
+				var leftCol, rightCol string
+
+				// Render left column (column 0)
+				if i < len(col0) {
+					leftCol = renderParam(col0[i], i+1, 0)
+				} else {
+					leftCol = ""
+				}
+
+				// Render right column (column 1)
+				if i < len(col1) {
+					rightCol = renderParam(col1[i], i+1, 1)
+				} else {
+					rightCol = ""
+				}
+
+				// Pad left column to fixed width for proper alignment
+				leftColPadded := leftCol
+				// Strip ANSI codes to measure actual text width
+				leftColStripped := stripAnsiCodes(leftCol)
+				if len(leftColStripped) < leftColWidth {
+					leftColPadded = leftCol + strings.Repeat(" ", leftColWidth-len(leftColStripped))
+				}
+
+				content.WriteString(leftColPadded)
+				if rightCol != "" {
+					content.WriteString(rightCol)
+				}
 				content.WriteString("\n")
 			}
 
 			// Add empty rows to maintain consistent height (max parameters is 9)
 			const maxParameters = 9
-			for i := len(def.Parameters); i < maxParameters; i++ {
+			for i := maxRows; i < maxParameters; i++ {
 				content.WriteString("\n") // Empty row for consistent spacing
 			}
 		} else {
