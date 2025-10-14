@@ -739,6 +739,8 @@ func extractZip(src, dest string) error {
 	return nil
 }
 
+// downloadAndExtractOpen303 downloads and extracts Open303, similar to downloadAndExtract
+// but with special handling to set executable permissions on the binary
 func downloadAndExtractOpen303(url, destDir string) error {
 	// Download the file
 	resp, err := http.Get(url)
@@ -787,7 +789,6 @@ func extractZipWithExecutable(src, dest, executableName string) error {
 	os.MkdirAll(dest, 0755)
 
 	for _, f := range r.File {
-		// Create the directories for this file
 		destPath := filepath.Join(dest, f.Name)
 
 		if f.FileInfo().IsDir() {
@@ -795,7 +796,7 @@ func extractZipWithExecutable(src, dest, executableName string) error {
 			continue
 		}
 
-		// Create the directories for this file
+		// Ensure parent directories exist
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			return fmt.Errorf("failed to create directory: %v", err)
 		}
