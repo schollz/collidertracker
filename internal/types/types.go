@@ -982,7 +982,7 @@ var InstrumentRegistry = map[string]InstrumentDefinition{
 			{
 				Key: "accentDecay", DisplayName: "Accent Decay", Type: ParameterTypeFloat,
 				MinValue: 30, MaxValue: 3000, DefaultValue: 200, Default: 200, Column: 1, Order: 5,
-				CoarseStep: 100, FineStep: 10, DisplayFormat: "%.0f",
+				CoarseStep: 100, FineStep: 10, DisplayFormat: "%.0f ms",
 			},
 			{
 				Key: "slideTime", DisplayName: "Slide Time", Type: ParameterTypeFloat,
