@@ -60,7 +60,7 @@ func RenderFileMetadataView(m *model.Model) string {
 		content.WriteString("\n\n")
 
 		return content.String()
-	}, fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust values | Shift+Down: Back to File Browser", input.GetModifierKey()), 7)
+	}, fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust values | Shift+Down: Back to File Browser", input.GetModifierKey()), 9)
 }
 
 func RenderFileView(m *model.Model) string {

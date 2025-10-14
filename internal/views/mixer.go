@@ -251,5 +251,5 @@ func RenderMixerView(m *model.Model) string {
 		content.WriteString("\n\n")
 
 		return content.String()
-	}, getMixerStatusMessage(m), 14)
+	}, getMixerStatusMessage(m), 12)
 }
