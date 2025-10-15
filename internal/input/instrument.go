@@ -227,10 +227,19 @@ func ModifySoundMakerValue(m *model.Model, baseDelta float32) {
 	} else {
 		// Handle parameter modification using the instrument framework
 		if def, exists := types.GetInstrumentDefinition(settings.Name); exists {
+			// Get parameters for the current column
+			col0, col1 := def.GetParametersSortedByColumn()
+			var params []types.InstrumentParameterDef
+			if m.CurrentCol == 0 {
+				params = col0
+			} else {
+				params = col1
+			}
+
 			// Parameter rows start at row 1
 			paramIndex := m.CurrentRow - 1
-			if paramIndex >= 0 && paramIndex < len(def.Parameters) {
-				param := def.Parameters[paramIndex]
+			if paramIndex >= 0 && paramIndex < len(params) {
+				param := params[paramIndex]
 				oldValue := settings.GetParameterValue(param.Key)
 
 				// Calculate delta based on parameter type and input

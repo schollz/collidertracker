@@ -389,12 +389,12 @@ func HasRequiredExtensions() bool {
 			return false
 		}
 	}
-	
+
 	// Also check for Open303
 	if !hasOpen303() {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -583,7 +583,7 @@ func getMiUGensURL() string {
 func getOpen303URL() string {
 	// Using the latest release from https://github.com/schollz/open303
 	const baseURL = "https://github.com/schollz/open303/releases/latest/download/"
-	
+
 	switch runtime.GOOS {
 	case "linux":
 		if runtime.GOARCH == "arm64" {
@@ -625,7 +625,7 @@ func hasOpen303() bool {
 	if installDir == "" {
 		return false
 	}
-	
+
 	// Check for the Open303 executable
 	var execName string
 	if runtime.GOOS == "windows" {
@@ -633,7 +633,7 @@ func hasOpen303() bool {
 	} else {
 		execName = "Open303"
 	}
-	
+
 	execPath := filepath.Join(installDir, execName)
 	return fileExists(execPath)
 }

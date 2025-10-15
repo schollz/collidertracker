@@ -446,7 +446,7 @@ func AdvancePlayback(m *model.Model) {
 
 			// Check if we advanced to a new song row (new chain)
 			newSongRow := m.SongPlaybackRow[track]
-			
+
 			// Detect cell boundary: either song row changed OR chain looped back to beginning
 			if newSongRow != oldSongRow || chainLooped {
 				// Track advanced to a new song row OR chain looped back - this is a song-level cell boundary
