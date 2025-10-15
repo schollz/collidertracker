@@ -941,7 +941,7 @@ var InstrumentRegistry = map[string]InstrumentDefinition{
 			{
 				Key: "basePregain", DisplayName: "Pregain", Type: ParameterTypeFloat,
 				MinValue: -60, MaxValue: 48, DefaultValue: 0, Default: 0, Column: 0, Order: 6,
-				CoarseStep: 6, FineStep: 0.1, DisplayFormat: "%.0f dB",
+				CoarseStep: 6, FineStep: 0.1, DisplayFormat: "%.1f dB",
 			},
 			{
 				Key: "baseDrive", DisplayName: "Drive", Type: ParameterTypeFloat,
@@ -951,7 +951,7 @@ var InstrumentRegistry = map[string]InstrumentDefinition{
 			{
 				Key: "basePostgain", DisplayName: "Postgain", Type: ParameterTypeFloat,
 				MinValue: -60, MaxValue: 24, DefaultValue: -12, Default: -12, Column: 0, Order: 8,
-				CoarseStep: 1, FineStep: 0.1, DisplayFormat: "%.0f dB",
+				CoarseStep: 1, FineStep: 0.1, DisplayFormat: "%.1f dB",
 			},
 			{
 				Key: "ampDecay", DisplayName: "Amp Decay", Type: ParameterTypeFloat,
