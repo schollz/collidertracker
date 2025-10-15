@@ -726,7 +726,7 @@ var InstrumentRegistry = map[string]InstrumentDefinition{
 			},
 			{
 				Key: "monophonic", DisplayName: "Monophonic", Type: ParameterTypeInt,
-				MinValue: 0, MaxValue: 1, DefaultValue: 0, Default: 0, Column: 1, Order: 2,
+				MinValue: 0, MaxValue: 1, DefaultValue: 0, Default: 0, Column: 1, Order: 0,
 				DisplayFormatter: FormatYesNo,
 			},
 		},
@@ -939,9 +939,19 @@ var InstrumentRegistry = map[string]InstrumentDefinition{
 				CoarseStep: 10, FineStep: 1, DisplayFormat: "%.0f%%",
 			},
 			{
-				Key: "baseVolume", DisplayName: "Volume", Type: ParameterTypeFloat,
-				MinValue: -60, MaxValue: 24, DefaultValue: -12, Default: -12, Column: 0, Order: 6,
-				CoarseStep: 6, FineStep: 1, DisplayFormat: "%.0f dB",
+				Key: "basePregain", DisplayName: "Pregain", Type: ParameterTypeFloat,
+				MinValue: -60, MaxValue: 48, DefaultValue: 0, Default: 0, Column: 0, Order: 6,
+				CoarseStep: 6, FineStep: 0.1, DisplayFormat: "%.0f dB",
+			},
+			{
+				Key: "baseDrive", DisplayName: "Drive", Type: ParameterTypeFloat,
+				MinValue: 0, MaxValue: 100, DefaultValue: 0, Default: 0, Column: 0, Order: 7,
+				CoarseStep: 5, FineStep: 1, DisplayFormat: "%.0f x",
+			},
+			{
+				Key: "basePostgain", DisplayName: "Postgain", Type: ParameterTypeFloat,
+				MinValue: -60, MaxValue: 24, DefaultValue: -12, Default: -12, Column: 0, Order: 8,
+				CoarseStep: 1, FineStep: 0.1, DisplayFormat: "%.0f dB",
 			},
 			{
 				Key: "ampDecay", DisplayName: "Amp Decay", Type: ParameterTypeFloat,

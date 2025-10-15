@@ -91,7 +91,9 @@ Routine{
 				envMod: \envMod.kr(60), // OPTION: 0–100, default 50, coarse 10, fine 1
 				decay: \normalDecay.kr(800), // OPTION: 30–3000, default 1000, coarse 100, fine 10
 				accent: \accent.kr(70), // OPTION: 0–100, default 50, coarse 10, fine 1
-				volume: \baseVolume.kr(6.neg), // OPTION: -60–0, default -12, coarse 6, fine 1
+				pregain: \basePregain.kr(6.neg), // OPTION: -60–0, default -12, coarse 6, fine 1
+				postgain: \basePostgain.kr(6.neg), // OPTION: -60–0, default -12, coarse 6, fine 1
+				distortion: \baseDrive.kr(0), // OPTION: 0–100, default 0, coarse 10, fine 1
 				ampSustain: \ampSustain.kr(0), // OPTION: -inf–0, default 0, coarse 6, fine 1
 				ampDecay: \ampDecay.kr(1230), // OPTION: 30–3000, default 1230, coarse 100, fine 10
 				ampRelease: \ampRelease.kr(1), // OPTION: 1–2000, default 1, coarse 100, fine 1
