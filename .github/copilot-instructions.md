@@ -6,8 +6,8 @@ ColliderTracker is a terminal-based music tracker that integrates with SuperColl
 
 **Repository Stats:**
 - **Language:** Go 1.25
-- **Size:** ~50MB
-- **Code:** 67 Go files, ~25,000 lines in `internal/`
+- **Size:** Medium-sized codebase (~50MB)
+- **Code:** Multiple packages in `internal/` directory with comprehensive test coverage
 - **Type:** Terminal UI application with audio engine integration
 - **Platforms:** Linux, macOS, Windows (with platform-specific code)
 
@@ -117,10 +117,10 @@ collidertracker/
     ├── audio/                       # Audio length calculation
     ├── getbpm/                      # BPM detection (includes test WAV files)
     ├── hacks/                       # Platform-specific workarounds
-    ├── input/                       # Keyboard input handling (350+ LOC)
+    ├── input/                       # Keyboard input handling and user interaction
     ├── midiconnector/               # MIDI device connection (platform-specific)
     ├── midiplayer/                  # MIDI playback engine
-    ├── model/                       # Core data model (88k+ LOC)
+    ├── model/                       # Core data model (large, central state management)
     ├── modulation/                  # Note modulation engine
     ├── music/                       # Music theory utilities
     ├── project/                     # Project selection UI
@@ -128,9 +128,9 @@ collidertracker/
     ├── supercollider/               # SuperCollider integration
     │   ├── collidertracker.scd     # SuperCollider server code
     │   ├── DX7.scd, DX7.afx        # DX7 synthesizer
-    │   └── dx7.json                # DX7 patch library (247KB)
+    │   └── dx7.json                # DX7 patch library
     ├── ticks/                       # Timing/tempo utilities
-    ├── types/                       # Core type definitions (47k+ LOC)
+    ├── types/                       # Core type definitions (data structures)
     └── views/                       # TUI views (song, chain, phrase, etc.)
 ```
 
@@ -138,7 +138,7 @@ collidertracker/
 
 **Main entry point:** `main.go` - Sets up Cobra CLI, initializes SuperCollider, starts Bubble Tea app
 
-**Core model:** `internal/model/model.go` - Central state management, 88k+ LOC
+**Core model:** `internal/model/model.go` - Central state management and application logic
 
 **Type definitions:** `internal/types/types.go` - Data structures for songs, chains, phrases, etc.
 
