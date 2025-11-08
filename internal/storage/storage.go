@@ -62,6 +62,25 @@ func DoSave(m *model.Model) {
 	}
 	log.Printf("Relative paths for save: %v", relativePaths)
 
+	// Prepare FileMetadata with relative WaveformFile paths for portability
+	portableFileMetadata := make(map[string]types.FileMetadata)
+	for filePath, metadata := range m.FileMetadata {
+		// Create a copy of the metadata
+		portableMetadata := metadata
+		
+		// Convert WaveformFile to relative path if it's within save folder
+		if portableMetadata.WaveformFile != "" {
+			relPath, err := filepath.Rel(m.SaveFolder, portableMetadata.WaveformFile)
+			if err == nil && !strings.HasPrefix(relPath, "..") {
+				// It's within the save folder, store as relative path
+				portableMetadata.WaveformFile = relPath
+				log.Printf("Storing WaveformFile as relative path for %s: %s", filepath.Base(filePath), relPath)
+			}
+		}
+		
+		portableFileMetadata[filePath] = portableMetadata
+	}
+
 	saveData := types.SaveData{
 		ViewMode:      m.ViewMode,
 		CurrentRow:    m.CurrentRow,
@@ -92,7 +111,7 @@ func DoSave(m *model.Model) {
 		ReverbSendPercent:          m.ReverbSendPercent,
 		TapePercent:                m.TapePercent,
 		ShimmerPercent:             m.ShimmerPercent,
-		FileMetadata:               m.FileMetadata,
+		FileMetadata:               portableFileMetadata,
 		LastChainRow:               m.LastChainRow,
 		LastPhraseRow:              m.LastPhraseRow,
 		LastPhraseCol:              m.LastPhraseCol,
@@ -203,6 +222,23 @@ func LoadState(m *model.Model, oscPort int, saveFolder string) error {
 	m.TapePercent = saveData.TapePercent
 	m.ShimmerPercent = saveData.ShimmerPercent
 	m.FileMetadata = saveData.FileMetadata
+	
+	// Resolve WaveformFile paths in metadata to be relative to save folder
+	// This handles the case where waveform files are in saveFolder/waveforms/ subdirectory
+	for filePath, metadata := range m.FileMetadata {
+		if metadata.WaveformFile != "" && !filepath.IsAbs(metadata.WaveformFile) {
+			// Try to resolve relative to save folder
+			resolvedPath := filepath.Join(saveFolder, metadata.WaveformFile)
+			if _, err := os.Stat(resolvedPath); err == nil {
+				metadata.WaveformFile = resolvedPath
+				m.FileMetadata[filePath] = metadata
+				log.Printf("Resolved WaveformFile for %s: %s", filepath.Base(filePath), resolvedPath)
+			} else {
+				log.Printf("Warning: WaveformFile not found for %s at: %s", filepath.Base(filePath), resolvedPath)
+			}
+		}
+	}
+	
 	m.LastChainRow = saveData.LastChainRow
 	m.LastPhraseRow = saveData.LastPhraseRow
 	m.LastPhraseCol = saveData.LastPhraseCol
@@ -502,7 +538,20 @@ func saveFileMetadata(saveFolder, originalPath string, metadata types.FileMetada
 	metadataFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName)) + ".metadata.json"
 	metadataPath := filepath.Join(saveFolder, metadataFileName)
 
-	data, err := json.Marshal(metadata)
+	// Convert WaveformFile to relative path if it's in the save folder hierarchy
+	// This makes the metadata portable when the project is moved
+	metadataToSave := metadata
+	if metadataToSave.WaveformFile != "" {
+		// Check if the waveform file is within the save folder
+		relPath, err := filepath.Rel(saveFolder, metadataToSave.WaveformFile)
+		if err == nil && !strings.HasPrefix(relPath, "..") {
+			// It's within the save folder, store as relative path
+			metadataToSave.WaveformFile = relPath
+			log.Printf("Storing WaveformFile as relative path: %s", relPath)
+		}
+	}
+
+	data, err := json.Marshal(metadataToSave)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
@@ -534,6 +583,19 @@ func loadFileMetadata(saveFolder, fileName string) (types.FileMetadata, error) {
 	err = json.Unmarshal(data, &metadata)
 	if err != nil {
 		return types.FileMetadata{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
+	}
+
+	// Resolve WaveformFile path relative to save folder if it's not already absolute
+	if metadata.WaveformFile != "" && !filepath.IsAbs(metadata.WaveformFile) {
+		originalRelPath := metadata.WaveformFile
+		resolvedPath := filepath.Join(saveFolder, metadata.WaveformFile)
+		// Check if the resolved file exists
+		if _, err := os.Stat(resolvedPath); err == nil {
+			metadata.WaveformFile = resolvedPath
+			log.Printf("Resolved WaveformFile: %s -> %s", originalRelPath, resolvedPath)
+		} else {
+			log.Printf("Warning: WaveformFile not found at resolved path: %s", resolvedPath)
+		}
 	}
 
 	log.Printf("Loaded metadata for %s from %s", fileName, metadataPath)

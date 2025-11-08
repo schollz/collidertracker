@@ -176,6 +176,109 @@ func TestAutoSave(t *testing.T) {
 	})
 }
 
+func TestWaveformFileResolution(t *testing.T) {
+	t.Run("waveform file path is resolved on load", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		saveFolder := filepath.Join(tmpDir, "test_waveform")
+
+		// Create waveforms directory
+		waveformDir := filepath.Join(saveFolder, "waveforms")
+		err := os.MkdirAll(waveformDir, 0755)
+		assert.NoError(t, err)
+
+		// Create a test audio file in save folder
+		testAudioFile := filepath.Join(saveFolder, "test.wav")
+		err = os.WriteFile(testAudioFile, []byte("test audio"), 0644)
+		assert.NoError(t, err)
+
+		// Create a test waveform file in the waveforms directory
+		testWaveformFile := filepath.Join(waveformDir, "test_waveform.wav")
+		err = os.WriteFile(testWaveformFile, []byte("test waveform"), 0644)
+		assert.NoError(t, err)
+
+		// Create a model and add file metadata with waveform file
+		m1 := model.NewModel(0, saveFolder, false)
+		m1.FileMetadata[testAudioFile] = types.FileMetadata{
+			BPM:          120.0,
+			Slices:       16,
+			SliceType:    0,
+			Playthrough:  0,
+			SyncToBPM:    1,
+			WaveformFile: testWaveformFile, // Absolute path initially
+		}
+		m1.SamplerPhrasesFiles = []string{testAudioFile}
+
+		// Save the model
+		DoSave(m1)
+
+		// Verify that the waveform file path was saved as relative in data.json.gz
+		// (We'll verify this by loading and checking)
+
+		// Create a new model and load state
+		m2 := model.NewModel(0, saveFolder, false)
+		err = LoadState(m2, 0, saveFolder)
+		assert.NoError(t, err)
+
+		// Check that the waveform file path is correctly resolved in the loaded model
+		loadedMetadata, exists := m2.FileMetadata[testAudioFile]
+		assert.True(t, exists, "Metadata should exist for test audio file")
+		assert.True(t, filepath.IsAbs(loadedMetadata.WaveformFile), "WaveformFile should be absolute after loading")
+		assert.Equal(t, testWaveformFile, loadedMetadata.WaveformFile, "WaveformFile should match expected path")
+
+		// Verify the waveform file exists at the resolved path
+		_, err = os.Stat(loadedMetadata.WaveformFile)
+		assert.NoError(t, err, "WaveformFile should exist at resolved path")
+	})
+
+	t.Run("waveform file outside save folder keeps absolute path", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		saveFolder := filepath.Join(tmpDir, "test_waveform_external")
+		externalDir := filepath.Join(tmpDir, "external")
+
+		// Create save folder
+		err := os.MkdirAll(saveFolder, 0755)
+		assert.NoError(t, err)
+
+		// Create external directory and file
+		err = os.MkdirAll(externalDir, 0755)
+		assert.NoError(t, err)
+
+		externalWaveformFile := filepath.Join(externalDir, "external_waveform.wav")
+		err = os.WriteFile(externalWaveformFile, []byte("external waveform"), 0644)
+		assert.NoError(t, err)
+
+		// Create a test audio file in save folder
+		testAudioFile := filepath.Join(saveFolder, "test.wav")
+		err = os.WriteFile(testAudioFile, []byte("test audio"), 0644)
+		assert.NoError(t, err)
+
+		// Create a model with metadata pointing to external waveform file
+		m1 := model.NewModel(0, saveFolder, false)
+		m1.FileMetadata[testAudioFile] = types.FileMetadata{
+			BPM:          120.0,
+			Slices:       16,
+			SliceType:    0,
+			Playthrough:  0,
+			SyncToBPM:    1,
+			WaveformFile: externalWaveformFile, // External absolute path
+		}
+		m1.SamplerPhrasesFiles = []string{testAudioFile}
+
+		// Save the model
+		DoSave(m1)
+
+		// Load the state
+		m2 := model.NewModel(0, saveFolder, false)
+		err = LoadState(m2, 0, saveFolder)
+		assert.NoError(t, err)
+
+		// The external waveform file path should remain absolute
+		loadedMetadata, exists := m2.FileMetadata[testAudioFile]
+		assert.True(t, exists, "Metadata should exist for test audio file")
+		assert.Equal(t, externalWaveformFile, loadedMetadata.WaveformFile, "External WaveformFile should remain absolute")
+	})
+}
+
 func BenchmarkDoSave(b *testing.B) {
 	// Create a temporary folder for testing
 	tmpDir := b.TempDir()
