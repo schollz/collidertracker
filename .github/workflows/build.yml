@@ -24,7 +24,6 @@ jobs:
           brew update
           brew install pkg-config
           brew install rtmidi
-          brew install sox
 
       - uses: actions/setup-go@v6
         with:
@@ -60,7 +59,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev sox zip
+          sudo apt-get install -y libasound2-dev zip
 
       - uses: actions/setup-go@v6
         with:
@@ -100,7 +99,6 @@ jobs:
             libtool \
             linux-headers \
             alsa-lib-dev \
-            sox \
             zip
 
       - uses: actions/checkout@v5
@@ -161,10 +159,6 @@ jobs:
         shell: msys2 {0}
         run: |
           pacman -S --noconfirm mingw-w64-x86_64-rtmidi mingw-w64-x86_64-toolchain
-
-      - name: Install sox
-        run: choco install sox
-        shell: powershell
 
       - name: Set up environment variables for Go
         shell: pwsh
