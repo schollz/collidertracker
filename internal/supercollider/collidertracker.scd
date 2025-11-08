@@ -489,6 +489,8 @@ Routine{
     			sliceReleaseBeats = 0.001,
     			sliceNum = 0,
     			sliceCount = 32, // number of slices to cut the sample into
+    			sliceStart = -1, // onset-based slice start position (0.0-1.0, -1 for even slicing)
+    			sliceEnd = -1,   // onset-based slice end position (0.0-1.0, -1 for even slicing)
     			trackOut,
     			effectDry = 1.0,
     			effectDryOut,
@@ -522,10 +524,18 @@ Routine{
     			var side, atk, rel, depth, slopeAbove, thresh, ducked;
 
     			sliceNum = sliceNum.mod(sliceCount);
-    			// convert slice beat to seconds
-    			pos = Select.kr(effectReverse>0,[
-    				sliceNum / sliceCount,
-    				((sliceNum+1).mod(sliceCount))/sliceCount
+    			// Use onset-based positions if provided, otherwise use even slicing
+    			pos = Select.kr(sliceStart >= 0, [
+    				// Even slicing (default)
+    				Select.kr(effectReverse>0,[
+    					sliceNum / sliceCount,
+    					((sliceNum+1).mod(sliceCount))/sliceCount
+    				]),
+    				// Onset-based slicing
+    				Select.kr(effectReverse>0,[
+    					sliceStart,
+    					sliceEnd
+    				])
     			]);
     			// compute seconds left
     			secondsLeft = Select.kr(effectReverse > 0, [

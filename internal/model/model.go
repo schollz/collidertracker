@@ -1083,6 +1083,8 @@ type SamplerOSCParams struct {
 	Playthrough           int     // 0=Sliced, 1=Oneshot
 	SyncToBPM             int     // 0=No, 1=Yes
 	Update                int     // 1 if this is an update to a playing row, 0 otherwise
+	SliceStart            float32 // Start position for onset-based slicing (0.0-1.0, -1 for even slicing)
+	SliceEnd              float32 // End position for onset-based slicing (0.0-1.0, -1 for even slicing)
 }
 
 type InstrumentOSCParams struct {
@@ -1145,7 +1147,9 @@ func NewSamplerOSCParams(filename string, trackId int, sliceCount, sliceNumber i
 		Playthrough:           0,  // Default Sliced (0)
 		SyncToBPM:             1,  // Default Yes (1)
 		Update:                0,  // Default is not an update
-		DuckingIndex:          -1, // Default no ducking,
+		DuckingIndex:          -1, // Default no ducking
+		SliceStart:            -1, // -1 means use even slicing
+		SliceEnd:              -1, // -1 means use even slicing
 	}
 }
 
@@ -1184,7 +1188,9 @@ func NewSamplerOSCParamsWithRetrigger(filename string, trackId, sliceCount, slic
 		SyncToBPM:             1,         // Default Yes (1)
 		DeltaTime:             deltaTime, // Delta time in seconds
 		Update:                0,         // Default is not an update
-		DuckingIndex:          -1,        // Default no ducking,
+		DuckingIndex:          -1,        // Default no ducking
+		SliceStart:            -1,        // -1 means use even slicing
+		SliceEnd:              -1,        // -1 means use even slicing
 	}
 }
 
@@ -1817,6 +1823,14 @@ func (m *Model) SendOSCSamplerMessage(params SamplerOSCParams) {
 	msg.Append(int32(params.Playthrough))
 	msg.Append("synctobpm")
 	msg.Append(int32(params.SyncToBPM))
+
+	// Add onset-based slicing parameters if available
+	if params.SliceStart >= 0 && params.SliceEnd >= 0 {
+		msg.Append("sliceStart")
+		msg.Append(float32(params.SliceStart))
+		msg.Append("sliceEnd")
+		msg.Append(float32(params.SliceEnd))
+	}
 
 	// Add update parameter when this is an update to a playing row
 	if params.Update == 1 {

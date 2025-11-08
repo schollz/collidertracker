@@ -90,6 +90,7 @@ func SelectFile(m *model.Model) {
 		m.FileMetadata[fullPath] = types.FileMetadata{
 			BPM:         float32(bpm),
 			Slices:      slices,
+			SliceType:   0, // Default: Even
 			Playthrough: 0, // Default: Sliced
 			SyncToBPM:   1, // Default: Yes
 		}

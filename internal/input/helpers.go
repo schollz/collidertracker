@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/schollz/collidertracker/internal/getbpm"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/modulation"
 	"github.com/schollz/collidertracker/internal/storage"
@@ -1000,6 +1001,36 @@ func EmitRowDataFor(m *model.Model, phrase, row, trackId int, isUpdate ...bool) 
 		}
 	} else {
 		oscParams = model.NewSamplerOSCParams(effectiveFilename, trackId, sliceCount, sliceNumber, bpmSource, m.BPM, sliceDuration, deltaTimeSeconds, velocity)
+	}
+
+	// Apply onset-based slicing if enabled
+	if exists && fileMetadata.SliceType == 1 && len(fileMetadata.Onsets) > 0 {
+		// Calculate which onset to use with modulo wrapping
+		onsetIndex := sliceNumber % len(fileMetadata.Onsets)
+		
+		// Get the onset time in seconds
+		onsetTime := fileMetadata.Onsets[onsetIndex]
+		
+		// Get the audio file length to calculate normalized positions
+		audioLength, _, _, err := getbpm.Length(effectiveFilename)
+		if err != nil {
+			log.Printf("WARNING: Failed to get audio length for %s: %v", effectiveFilename, err)
+		} else {
+			// Calculate start position (normalized 0.0-1.0)
+			oscParams.SliceStart = float32(onsetTime / audioLength)
+			
+			// Calculate end position (next onset or end of file)
+			if onsetIndex < len(fileMetadata.Onsets)-1 {
+				nextOnsetTime := fileMetadata.Onsets[onsetIndex+1]
+				oscParams.SliceEnd = float32(nextOnsetTime / audioLength)
+			} else {
+				// Last onset - play to end of file
+				oscParams.SliceEnd = 1.0
+			}
+			
+			log.Printf("Onset slicing: file=%s, slice=%d, onsetIndex=%d/%d, start=%.3f, end=%.3f", 
+				effectiveFilename, sliceNumber, onsetIndex, len(fileMetadata.Onsets), oscParams.SliceStart, oscParams.SliceEnd)
+		}
 	}
 
 	// Pitch conversion from hex to float: 128 (0x80) = 0.0, range 0-254 maps to -24 to +24
