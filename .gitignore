@@ -57,3 +57,5 @@ samples/
 cube/
 new2
 log
+# Waveform visualization cache files
+waveforms/

@@ -83,7 +83,13 @@ func RenderWaveformView(m *model.Model) string {
 	}
 	
 	// Render the waveform with markers
-	waveformStr, err := renderWaveformWithMarkers(file, waveWidth, waveformHeight, 
+	// Use the waveform file if available (converted for visualization), otherwise use original
+	waveformFile := file
+	if hasMetadata && metadata.WaveformFile != "" {
+		waveformFile = metadata.WaveformFile
+	}
+	
+	waveformStr, err := renderWaveformWithMarkers(waveformFile, waveWidth, waveformHeight, 
 		m.WaveformStart, m.WaveformEnd, metadata.Onsets, m.WaveformSelectedSlice)
 	if err != nil {
 		content.WriteString(styles.Label.Render(fmt.Sprintf("Error rendering waveform: %v", err)))

@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/schollz/collidertracker/internal/audio"
 	"github.com/schollz/collidertracker/internal/getbpm"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/storage"
@@ -37,6 +38,35 @@ func handleW(m *model.Model) tea.Cmd {
 	// Make sure the file is absolute path
 	if !filepath.IsAbs(file) {
 		file = filepath.Join(m.SaveFolder, file)
+	}
+	
+	// Ensure we have a waveform file for visualization
+	// Check if metadata exists and has a waveform file
+	metadata, hasMetadata := m.FileMetadata[file]
+	if !hasMetadata || metadata.WaveformFile == "" {
+		// Need to generate waveform file
+		waveformFile, err := audio.ConvertToWaveformFile(file, m.SaveFolder)
+		if err != nil {
+			log.Printf("Warning: Failed to create waveform file: %v", err)
+			// Continue anyway - will use original file
+		} else {
+			// Update metadata with waveform file
+			if hasMetadata {
+				metadata.WaveformFile = waveformFile
+				m.FileMetadata[file] = metadata
+			} else {
+				// Create new metadata
+				m.FileMetadata[file] = types.FileMetadata{
+					BPM:          120.0,
+					Slices:       16,
+					SliceType:    0,
+					Playthrough:  0,
+					SyncToBPM:    1,
+					WaveformFile: waveformFile,
+				}
+			}
+			storage.AutoSave(m)
+		}
 	}
 	
 	// Get audio duration

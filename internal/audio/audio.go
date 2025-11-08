@@ -1,8 +1,11 @@
 package audio
 
 import (
+	"fmt"
 	"log"
 	"math"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -11,6 +14,44 @@ import (
 	"github.com/schollz/collidertracker/internal/storage"
 	"github.com/schollz/collidertracker/internal/types"
 )
+
+// ConvertToWaveformFile converts an audio file to 16-bit mono .wav format for waveform visualization
+// Returns the path to the converted file, or an error if conversion fails
+func ConvertToWaveformFile(inputPath string, projectDir string) (string, error) {
+	// Create waveforms subdirectory in project directory
+	waveformDir := filepath.Join(projectDir, "waveforms")
+	if err := os.MkdirAll(waveformDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create waveforms directory: %w", err)
+	}
+	
+	// Generate output filename: use basename + _waveform.wav
+	baseName := filepath.Base(inputPath)
+	ext := filepath.Ext(baseName)
+	nameWithoutExt := strings.TrimSuffix(baseName, ext)
+	outputPath := filepath.Join(waveformDir, nameWithoutExt+"_waveform.wav")
+	
+	// Check if converted file already exists and is newer than source
+	if info, err := os.Stat(outputPath); err == nil {
+		sourceInfo, err := os.Stat(inputPath)
+		if err == nil && info.ModTime().After(sourceInfo.ModTime()) {
+			// Converted file exists and is up to date
+			log.Printf("Using existing waveform file: %s", outputPath)
+			return outputPath, nil
+		}
+	}
+	
+	// Use sox to convert to 16-bit mono wav
+	// sox input.ext -c 1 -b 16 output.wav
+	cmd := exec.Command("sox", inputPath, "-c", "1", "-b", "16", outputPath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("sox conversion failed: %w (output: %s)", err, string(output))
+	}
+	
+	log.Printf("Converted audio file for waveform: %s -> %s", inputPath, outputPath)
+	return outputPath, nil
+}
+
 
 func PlayFile(m *model.Model) {
 	if len(m.Files) == 0 || m.CurrentRow >= len(m.Files) {
@@ -79,25 +120,42 @@ func SelectFile(m *model.Model) {
 	phrasesData := m.GetCurrentPhrasesData()
 	(*phrasesData)[m.CurrentPhrase][m.FileSelectRow][int(types.ColFilename)] = fileIndex
 
+	// Convert file for waveform visualization
+	waveformFile, err := ConvertToWaveformFile(fullPath, m.SaveFolder)
+	if err != nil {
+		log.Printf("Warning: Failed to create waveform file for %s: %v", fullPath, err)
+		// Continue anyway - waveform visualization will be unavailable but file can still be used
+		waveformFile = "" // Empty string indicates no waveform file available
+	}
+
 	// Set initial metadata using getbpm.GetBPM
 	// BPM should be float, slices should be 2x beats (rounded to int)
 	var bpm float64
 	var beats float64
-	var err error
 	beats, bpm, err = getbpm.GetBPM(fullPath)
 	if err == nil {
 		slices := int(2 * math.Round(beats))
 		m.FileMetadata[fullPath] = types.FileMetadata{
-			BPM:         float32(bpm),
-			Slices:      slices,
-			SliceType:   0, // Default: Even
-			Playthrough: 0, // Default: Sliced
-			SyncToBPM:   1, // Default: Yes
+			BPM:          float32(bpm),
+			Slices:       slices,
+			SliceType:    0, // Default: Even
+			Playthrough:  0, // Default: Sliced
+			SyncToBPM:    1, // Default: Yes
+			WaveformFile: waveformFile,
 		}
 		// Generate equal slices for the default Even mode
 		m.GenerateEqualSlices(fullPath)
 	} else {
 		log.Printf("Could not get BPM for %s: %v", fullPath, err)
+		// Still store the waveform file path even if BPM detection failed
+		m.FileMetadata[fullPath] = types.FileMetadata{
+			BPM:          120.0, // Default BPM
+			Slices:       16,    // Default slices
+			SliceType:    0,
+			Playthrough:  0,
+			SyncToBPM:    1,
+			WaveformFile: waveformFile,
+		}
 	}
 
 	// Track this as the last edited row so "S" key will work
