@@ -21,10 +21,11 @@ func RenderFileMetadataView(m *model.Model) string {
 		// Get current metadata or defaults
 		metadata, exists := m.FileMetadata[m.MetadataEditingFile]
 		if !exists {
-			metadata = types.FileMetadata{BPM: 120.0, Slices: 16, Playthrough: 0, SyncToBPM: 1} // Default values
+			metadata = types.FileMetadata{BPM: 120.0, Slices: 16, SliceType: 0, Playthrough: 0, SyncToBPM: 1} // Default values
 		}
 
 		// Helper to get option text
+		sliceTypeOptions := []string{"Even", "Onsets"}
 		playthroughOptions := []string{"Sliced", "Oneshot"}
 		syncToBPMOptions := []string{"No", "Yes"}
 
@@ -36,8 +37,9 @@ func RenderFileMetadataView(m *model.Model) string {
 		}{
 			{"BPM:", fmt.Sprintf("%.2f", metadata.BPM), 0},
 			{"Slices:", fmt.Sprintf("%d", metadata.Slices), 1},
-			{"Playthrough:", playthroughOptions[metadata.Playthrough], 2},
-			{"Sync to BPM:", syncToBPMOptions[metadata.SyncToBPM], 3},
+			{"Slice Type:", sliceTypeOptions[metadata.SliceType], 2},
+			{"Playthrough:", playthroughOptions[metadata.Playthrough], 3},
+			{"Sync to BPM:", syncToBPMOptions[metadata.SyncToBPM], 4},
 		}
 
 		for _, setting := range settings {

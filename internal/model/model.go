@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hypebeast/go-osc/osc"
+	"github.com/schollz/onsets"
 
 	"github.com/schollz/collidertracker/internal/midiplayer"
 	"github.com/schollz/collidertracker/internal/types"
@@ -157,6 +158,9 @@ type Model struct {
 	ModulateRngs [8]*rand.Rand // Per-track RNG for modulation (one per track)
 	// Vim mode configuration
 	VimMode bool // Enable vim-style cursor movement (h/j/k/l)
+	// Onset detection state
+	onsetDetectionPending map[string]*time.Timer // Map of file path to debounce timer
+	onsetDetectionMutex   sync.Mutex             // Mutex for safe access to onset detection state
 }
 
 // Methods for modifying data structures
@@ -763,6 +767,8 @@ func NewModel(oscPort int, saveFolder string, vimMode bool) *Model {
 		CurrentRecordingFile: "",
 		// Initialize vim mode
 		VimMode: vimMode,
+		// Initialize onset detection state
+		onsetDetectionPending: make(map[string]*time.Timer),
 	}
 
 	// Initialize mixer state with defaults
@@ -2347,4 +2353,106 @@ func (m *Model) IsSoundMakerSettingDefault(index int) bool {
 	}
 	s := m.SoundMakerSettings[index]
 	return s.Name == "None" && len(s.Parameters) == 0 && s.PatchName == ""
+}
+
+// TriggerOnsetDetection initiates onset detection for a file with debouncing
+func (m *Model) TriggerOnsetDetection(filePath string) {
+	m.onsetDetectionMutex.Lock()
+	defer m.onsetDetectionMutex.Unlock()
+
+	// Cancel any existing timer for this file
+	if timer, exists := m.onsetDetectionPending[filePath]; exists {
+		timer.Stop()
+		delete(m.onsetDetectionPending, filePath)
+	}
+
+	// Create a new timer that will trigger onset detection after 500ms
+	timer := time.AfterFunc(500*time.Millisecond, func() {
+		m.performOnsetDetection(filePath)
+		
+		// Clean up the timer from the map
+		m.onsetDetectionMutex.Lock()
+		delete(m.onsetDetectionPending, filePath)
+		m.onsetDetectionMutex.Unlock()
+	})
+
+	m.onsetDetectionPending[filePath] = timer
+}
+
+// performOnsetDetection performs the actual onset detection
+func (m *Model) performOnsetDetection(filePath string) {
+	// Get the current metadata
+	metadata, exists := m.FileMetadata[filePath]
+	if !exists {
+		log.Printf("Onset detection skipped: no metadata found for %s", filePath)
+		return
+	}
+
+	// Only proceed if SliceType is 1 (Onsets)
+	if metadata.SliceType != 1 {
+		return
+	}
+
+	// Get absolute path
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		log.Printf("Onset detection error: could not resolve path for %s: %v", filePath, err)
+		return
+	}
+
+	log.Printf("Starting onset detection for %s with %d slices", absPath, metadata.Slices)
+
+	// Perform onset detection in a goroutine to avoid blocking
+	go func() {
+		options := onset.SliceAnalyzerOptions{
+			NumSlices:        metadata.Slices,
+			Method:           "hfc",
+			Optimize:         true,
+			OptimizeWindowMs: 15.0,
+		}
+
+		result, err := onset.AnalyzeSlices(absPath, options)
+		if err != nil {
+			log.Printf("Onset detection failed for %s: %v", absPath, err)
+			return
+		}
+
+		// Update the metadata with the detected onsets
+		m.onsetDetectionMutex.Lock()
+		defer m.onsetDetectionMutex.Unlock()
+		
+		currentMetadata, exists := m.FileMetadata[filePath]
+		if !exists {
+			log.Printf("Onset detection completed but metadata was removed for %s", filePath)
+			return
+		}
+
+		currentMetadata.Onsets = result.Onsets
+		m.FileMetadata[filePath] = currentMetadata
+		
+		log.Printf("Onset detection completed for %s: found %d onsets", filePath, len(result.Onsets))
+		
+		// Trigger auto-save
+		// Note: This will need to be called through a proper mechanism
+		// For now, we'll just update the metadata
+	}()
+}
+
+// GetSliceForSample returns the slice number to use for a given slice index and file
+// This handles both Even and Onsets modes
+func (m *Model) GetSliceForSample(filePath string, requestedSlice int) int {
+	metadata, exists := m.FileMetadata[filePath]
+	if !exists {
+		// Default to even slicing
+		return requestedSlice
+	}
+
+	// If using onsets mode and we have onsets
+	if metadata.SliceType == 1 && len(metadata.Onsets) > 0 {
+		// Use modulus to wrap around if requesting more slices than we have onsets
+		return requestedSlice % len(metadata.Onsets)
+	}
+
+	// Default to even slicing
+	return requestedSlice
 }

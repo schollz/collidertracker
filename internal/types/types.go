@@ -313,10 +313,12 @@ func GetChordNotes(root int, ctype ChordType, add ChordAddition, transpose Chord
 }
 
 type FileMetadata struct {
-	BPM         float32 `json:"bpm"`         // Source BPM for the file
-	Slices      int     `json:"slices"`      // Number of slices in the file
-	Playthrough int     `json:"playthrough"` // 0=Sliced, 1=Oneshot
-	SyncToBPM   int     `json:"synctobpm"`   // 0=No, 1=Yes (default)
+	BPM         float32   `json:"bpm"`         // Source BPM for the file
+	Slices      int       `json:"slices"`      // Number of slices in the file
+	Playthrough int       `json:"playthrough"` // 0=Sliced, 1=Oneshot
+	SyncToBPM   int       `json:"synctobpm"`   // 0=No, 1=Yes (default)
+	SliceType   int       `json:"slicetype"`   // 0=Even (default), 1=Onsets
+	Onsets      []float64 `json:"onsets"`      // Onset times in seconds (populated when SliceType=1)
 }
 
 type RetriggerSettings struct {
@@ -420,8 +422,9 @@ type FileMetadataRow int
 const (
 	FileMetadataRowBPM         FileMetadataRow = iota // 0: BPM
 	FileMetadataRowSlices                             // 1: Slices
-	FileMetadataRowPlaythrough                        // 2: Playthrough
-	FileMetadataRowSyncToBPM                          // 3: Sync to BPM
+	FileMetadataRowSliceType                          // 2: Slice Type
+	FileMetadataRowPlaythrough                        // 3: Playthrough
+	FileMetadataRowSyncToBPM                          // 4: Sync to BPM
 )
 
 // MidiSettingsRow represents different rows in the MIDI settings view

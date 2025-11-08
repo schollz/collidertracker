@@ -16,7 +16,7 @@ func ModifyFileMetadataValue(m *model.Model, delta float32) {
 	// Get current metadata or create default
 	metadata, exists := m.FileMetadata[m.MetadataEditingFile]
 	if !exists {
-		metadata = types.FileMetadata{BPM: 120.0, Slices: 16, Playthrough: 0, SyncToBPM: 1} // Default values
+		metadata = types.FileMetadata{BPM: 120.0, Slices: 16, SliceType: 0, Playthrough: 0, SyncToBPM: 1} // Default values
 	}
 
 	switch types.FileMetadataRow(m.CurrentRow) {
@@ -37,8 +37,27 @@ func ModifyFileMetadataValue(m *model.Model, delta float32) {
 			func(v int) {
 				metadata.Slices = v
 				m.FileMetadata[m.MetadataEditingFile] = metadata
+				// Trigger onset detection if in Onsets mode
+				if metadata.SliceType == 1 {
+					m.TriggerOnsetDetection(m.MetadataEditingFile)
+				}
 			},
 			1, 999, fmt.Sprintf("file metadata Slices for %s", m.MetadataEditingFile),
+		)
+		modifyValueWithBounds(modifier, delta)
+
+	case types.FileMetadataRowSliceType: // Slice Type (0=Even, 1=Onsets)
+		modifier := createIntModifier(
+			func() int { return metadata.SliceType },
+			func(v int) {
+				metadata.SliceType = v
+				m.FileMetadata[m.MetadataEditingFile] = metadata
+				// Trigger onset detection if switching to Onsets mode
+				if v == 1 {
+					m.TriggerOnsetDetection(m.MetadataEditingFile)
+				}
+			},
+			0, 1, fmt.Sprintf("file metadata SliceType for %s", m.MetadataEditingFile),
 		)
 		modifyValueWithBounds(modifier, delta)
 
