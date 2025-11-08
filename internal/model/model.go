@@ -162,6 +162,13 @@ type Model struct {
 	// Onset detection state
 	onsetDetectionPending map[string]*time.Timer // Map of file path to debounce timer
 	onsetDetectionMutex   sync.Mutex             // Mutex for safe access to onset detection state
+	// Waveform view state
+	WaveformFile          string  // File being viewed in waveform view
+	WaveformStart         float64 // Start time in seconds for waveform view
+	WaveformEnd           float64 // End time in seconds for waveform view
+	WaveformDuration      float64 // Total duration of the waveform file (cached)
+	WaveformSelectedSlice int     // Index of selected slice/marker (-1 if none)
+	WaveformPreviousView  types.ViewMode // View to return to when exiting waveform view
 }
 
 // Methods for modifying data structures
@@ -770,6 +777,13 @@ func NewModel(oscPort int, saveFolder string, vimMode bool) *Model {
 		VimMode: vimMode,
 		// Initialize onset detection state
 		onsetDetectionPending: make(map[string]*time.Timer),
+		// Initialize waveform view state
+		WaveformFile:          "",
+		WaveformStart:         0.0,
+		WaveformEnd:           0.0,
+		WaveformDuration:      0.0,
+		WaveformSelectedSlice: -1,
+		WaveformPreviousView:  types.SongView,
 	}
 
 	// Initialize mixer state with defaults
@@ -2158,6 +2172,36 @@ func (m *Model) GetPhraseViewType() types.PhraseViewType {
 	// Default to Sampler for invalid track numbers
 	return types.SamplerPhraseView
 }
+
+// GetCurrentTrackFile returns the file path currently associated with the current track
+// For sampler tracks, it looks at the current phrase to find the most recent file
+// Returns empty string if no file is found or if track is an instrument track
+func (m *Model) GetCurrentTrackFile() string {
+	// Only sampler tracks have files
+	if m.GetPhraseViewType() == types.InstrumentPhraseView {
+		return ""
+	}
+
+	// Get the current phrase data for this track
+	phrasesData := m.GetCurrentPhrasesData()
+	phrasesFiles := m.GetCurrentPhrasesFiles()
+	
+	if phrasesFiles == nil || len(*phrasesFiles) == 0 {
+		return ""
+	}
+
+	// Look through the current phrase to find the most recent file index
+	phraseData := (*phrasesData)[m.CurrentPhrase]
+	for row := len(phraseData) - 1; row >= 0; row-- {
+		fileIdx := phraseData[row][types.ColFilename]
+		if fileIdx >= 0 && fileIdx < len(*phrasesFiles) {
+			return (*phrasesFiles)[fileIdx]
+		}
+	}
+
+	return ""
+}
+
 
 // sendOSCMessage provides common logic for sending OSC messages
 func (m *Model) sendOSCMessage(config OSCMessageConfig) {

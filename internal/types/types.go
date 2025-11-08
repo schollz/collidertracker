@@ -21,6 +21,7 @@ const (
 	MidiView
 	SoundMakerView
 	DuckingView
+	WaveformView
 )
 
 type PhraseViewType int

@@ -698,6 +698,8 @@ func (tm TrackerModel) View() string {
 		return views.RenderDuckingView(tm.model)
 	case types.MixerView:
 		return views.RenderMixerView(tm.model)
+	case types.WaveformView:
+		return views.RenderWaveformView(tm.model)
 	default: // FileView
 		return views.RenderFileView(tm.model)
 	}

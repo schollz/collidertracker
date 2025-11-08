@@ -171,6 +171,12 @@ func GetModifierKey() string {
 
 func HandleKeyInput(m *model.Model, msg tea.KeyMsg) tea.Cmd {
 	log.Printf("key: %s, %+v", msg.String(), msg)
+	
+	// Handle waveform view input separately
+	if m.ViewMode == types.WaveformView {
+		return HandleWaveformInput(m, msg)
+	}
+	
 	switch msg.String() {
 	case "ctrl+q", "alt+q":
 		return tea.Quit
@@ -239,7 +245,7 @@ func HandleKeyInput(m *model.Model, msg tea.KeyMsg) tea.Cmd {
 		return handleCtrlV(m)
 
 	case "w":
-		return handleCtrlV(m)
+		return handleW(m)
 
 	case "ctrl+d", "alt+d":
 		return handleCtrlD(m)
