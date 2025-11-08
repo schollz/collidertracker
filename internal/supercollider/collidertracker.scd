@@ -1248,6 +1248,64 @@ Routine{
     		});
     	},'/set_track');
 
+    	// OSC handler for file rendering/conversion
+    	OSCFunc({ |msg|
+    		var inPath, outPath, defBytes, duration;
+
+    		inPath = msg[1].asString;
+    		outPath = msg[2].asString;
+
+    		("Rendering file: " ++ inPath ++ " -> " ++ outPath).postln;
+
+    		if(File.exists(inPath).not) {
+    			("Input file does not exist: " ++ inPath).warn;
+    			^nil;
+    		};
+
+    		// STEP 1: read file on scsynth to get duration/doneAction info
+    		Buffer.read(Server.local, inPath, action: { |buf|
+    			duration = buf.numFrames / buf.sampleRate;
+    			("File duration: " ++ duration ++ " seconds").postln;
+    			buf.free;
+
+    			// STEP 2: once we have the duration, run the NRT render
+    			{
+    				var score;
+
+    				defBytes = SynthDef(\monoPlay, {
+    					|bufnum = 0, amp = 1|
+    					var sig, rate;
+
+    					rate = BufRateScale.kr(bufnum);
+
+    					// always request 2 channels, safe for any file
+    					sig = PlayBuf.ar(2, bufnum, rate, doneAction: 2);
+    					sig = sig[0]; // left channel (mono output)
+
+    					Out.ar(0, sig * amp);
+    				}).asBytes;
+
+    				score = Score([
+    					[0.0, [\d_recv, defBytes]],
+    					[0.0, [\b_allocRead, 0, inPath]],
+    					[0.0, [\s_new, \monoPlay, 1000, 0, 0, \bufnum, 0]]
+    				]);
+
+    				score.recordNRT(
+    					outputFilePath: outPath,
+    					headerFormat: "wav",
+    					sampleFormat: "int16",
+    					sampleRate: 44100,
+    					duration: duration, // REQUIRED for NRT
+    					options: ServerOptions.new.numOutputBusChannels_(1),
+    					action: { ("Finished rendering: " ++ outPath).postln }
+    				);
+
+    			}.defer; // run after current callback (avoid mixing RT/NRT)
+    		});
+
+    	}, '/renderFile');
+
     	["loaded",NetAddr.langPort, NetAddr.localAddr].postln;
 
     	s.sync;

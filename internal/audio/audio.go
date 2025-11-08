@@ -5,10 +5,11 @@ import (
 	"log"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/hypebeast/go-osc/osc"
 	"github.com/schollz/collidertracker/internal/getbpm"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/storage"
@@ -40,16 +41,75 @@ func ConvertToWaveformFile(inputPath string, projectDir string) (string, error) 
 		}
 	}
 	
-	// Use sox to convert to 16-bit mono wav
-	// sox input.ext -c 1 -b 16 output.wav
-	cmd := exec.Command("sox", inputPath, "-c", "1", "-b", "16", outputPath)
-	output, err := cmd.CombinedOutput()
+	// Convert to absolute paths for SuperCollider
+	absInputPath, err := filepath.Abs(inputPath)
 	if err != nil {
-		return "", fmt.Errorf("sox conversion failed: %w (output: %s)", err, string(output))
+		return "", fmt.Errorf("failed to get absolute input path: %w", err)
+	}
+	absOutputPath, err := filepath.Abs(outputPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute output path: %w", err)
 	}
 	
-	log.Printf("Converted audio file for waveform: %s -> %s", inputPath, outputPath)
-	return outputPath, nil
+	// Send OSC message to SuperCollider to render the file
+	oscClient := osc.NewClient("localhost", 57120)
+	msg := osc.NewMessage("/renderFile")
+	msg.Append(absInputPath)
+	msg.Append(absOutputPath)
+	
+	err = oscClient.Send(msg)
+	if err != nil {
+		return "", fmt.Errorf("failed to send OSC renderFile message: %w", err)
+	}
+	
+	log.Printf("Sent OSC renderFile message: %s -> %s", absInputPath, absOutputPath)
+	
+	// Poll for the output file with exponential backoff
+	// SuperCollider needs time to process the file, especially for longer files
+	const maxWaitTime = 30 * time.Second
+	const initialBackoff = 100 * time.Millisecond
+	const maxBackoff = 2 * time.Second
+	
+	startTime := time.Now()
+	backoff := initialBackoff
+	var lastSize int64 = -1
+	stableSizeCount := 0
+	
+	for {
+		// Check if we've exceeded max wait time
+		if time.Since(startTime) > maxWaitTime {
+			return "", fmt.Errorf("timeout waiting for SuperCollider to convert file (waited %v)", maxWaitTime)
+		}
+		
+		// Check if file exists and get its size
+		info, err := os.Stat(absOutputPath)
+		if err == nil {
+			// File exists, check if it's still being written
+			currentSize := info.Size()
+			
+			if currentSize == lastSize && currentSize > 0 {
+				stableSizeCount++
+				// If size hasn't changed for 2 consecutive checks, assume it's done
+				if stableSizeCount >= 2 {
+					log.Printf("Converted audio file for waveform: %s -> %s (took %v)", absInputPath, absOutputPath, time.Since(startTime))
+					return absOutputPath, nil
+				}
+			} else {
+				stableSizeCount = 0
+			}
+			
+			lastSize = currentSize
+		}
+		
+		// Wait before checking again
+		time.Sleep(backoff)
+		
+		// Increase backoff time (exponential backoff with max)
+		backoff = backoff * 2
+		if backoff > maxBackoff {
+			backoff = maxBackoff
+		}
+	}
 }
 
 
