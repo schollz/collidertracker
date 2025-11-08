@@ -1004,8 +1004,8 @@ func EmitRowDataFor(m *model.Model, phrase, row, trackId int, isUpdate ...bool) 
 	}
 
 	// Calculate slice start and end positions based on slicing type
-	if exists && fileMetadata.SliceType == 1 && len(fileMetadata.Onsets) > 0 {
-		// Onset-based slicing: use detected onset positions
+	if exists && len(fileMetadata.Onsets) > 0 {
+		// Use pre-computed onset/slice positions (works for both Onset and Equal modes)
 		// Calculate which onset to use with modulo wrapping
 		// Handle negative slice numbers by wrapping around
 		onsetIndex := sliceNumber % len(fileMetadata.Onsets)
@@ -1033,11 +1033,15 @@ func EmitRowDataFor(m *model.Model, phrase, row, trackId int, isUpdate ...bool) 
 				oscParams.SliceEnd = 1.0
 			}
 			
-			log.Printf("Onset slicing: file=%s, slice=%d, onsetIndex=%d/%d, start=%.3f, end=%.3f", 
-				effectiveFilename, sliceNumber, onsetIndex, len(fileMetadata.Onsets), oscParams.SliceStart, oscParams.SliceEnd)
+			sliceTypeStr := "Onset"
+			if fileMetadata.SliceType == 0 {
+				sliceTypeStr = "Equal"
+			}
+			log.Printf("%s slicing: file=%s, slice=%d, onsetIndex=%d/%d, start=%.3f, end=%.3f", 
+				sliceTypeStr, effectiveFilename, sliceNumber, onsetIndex, len(fileMetadata.Onsets), oscParams.SliceStart, oscParams.SliceEnd)
 		}
 	} else {
-		// Even slicing: calculate positions from slice number and slice count
+		// Fallback: Even slicing calculated on-the-fly (for backward compatibility)
 		// Normalize slice number to be within bounds
 		normalizedSliceNum := sliceNumber % sliceCount
 		if normalizedSliceNum < 0 {
@@ -1048,7 +1052,7 @@ func EmitRowDataFor(m *model.Model, phrase, row, trackId int, isUpdate ...bool) 
 		oscParams.SliceStart = float32(normalizedSliceNum) / float32(sliceCount)
 		oscParams.SliceEnd = float32(normalizedSliceNum+1) / float32(sliceCount)
 		
-		log.Printf("Even slicing: file=%s, slice=%d/%d, start=%.3f, end=%.3f", 
+		log.Printf("Even slicing (fallback): file=%s, slice=%d/%d, start=%.3f, end=%.3f", 
 			effectiveFilename, sliceNumber, sliceCount, oscParams.SliceStart, oscParams.SliceEnd)
 	}
 
