@@ -394,6 +394,17 @@ func runColliderTracker(cmd *cobra.Command, args []string) {
 		}
 	})
 
+	d.AddMsgHandler("/sampler_playhead", func(msg *osc.Message) {
+		if tm != nil {
+			trackID := int(msg.Arguments[0].(float32))
+			gate := int(msg.Arguments[1].(float32))
+			pos := float64(msg.Arguments[2].(float32))
+			sliceStart := float64(msg.Arguments[3].(float32))
+			sliceEnd := float64(msg.Arguments[4].(float32))
+			log.Printf("Track %d playhead: gate=%d pos=%.2f sliceStart=%.2f sliceEnd=%.2f", trackID, gate, pos, sliceStart, sliceEnd)
+		}
+	})
+
 	d.AddMsgHandler("/track_volume", func(msg *osc.Message) {
 		if tm != nil {
 			for i := 0; i < len(tm.model.TrackVolumes); i++ {

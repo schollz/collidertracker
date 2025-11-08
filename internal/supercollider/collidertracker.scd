@@ -508,7 +508,7 @@ Routine{
     			;
     			var snd,sndA,sndB,crossfade,aOrB;
     			var sndDry, sndReverb, sndComb;
-    			var posA,posB;
+    			var posA,posB,posCur;
     			var retrigTrig, retrigCount;
     			var frames=BufFrames.ir(buf);
     			var syncBpm=(\synctobpm.ir(0) * bpmTarget/bpmSource) + (1 - \synctobpm.ir(0));
@@ -604,6 +604,7 @@ Routine{
     				end:frames,
     				resetPos:timestretchRate,
     			);
+				posCur = Select.ar(aOrB,[posB,posA])/frames;
     			snd=(BufRd.ar(
     				numChannels:ch+1,
     				bufnum:buf,
@@ -675,6 +676,14 @@ Routine{
     				])
     			);
 
+				// Send out the slice start/stop and playhead position and gate info for the track
+				SendReply.kr(Impulse.kr(30),'/sampler_playhead',[
+					trackId,
+					gate,
+					posCur, 
+					sliceStart,
+					sliceEnd
+				]);
 
     			// Feedback
     			LocalOut.ar(retrigCount);
@@ -1130,6 +1139,9 @@ Routine{
     	OSCFunc({ |msg|
     		NetAddr.new("127.0.0.1", 57121).sendMsg("/waveform", msg[3]);
     	},'/waveform');
+		OSCFunc({ |msg|
+			NetAddr.new("127.0.0.1", 57121).sendMsg("/sampler_playhead", *msg[3..]);
+		},'/sampler_playhead');
     	OSCFunc({ |msg|
     		NetAddr.new("127.0.0.1", 57121).sendMsg("/track_volume", *msg[3..]);
     	},'/track_volume');
