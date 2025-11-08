@@ -487,10 +487,9 @@ Routine{
     			sliceAttackBeats = 0.001,
     			sliceDurationBeats = 0,
     			sliceReleaseBeats = 0.001,
-    			sliceNum = 0,
     			sliceCount = 32, // number of slices to cut the sample into
-    			sliceStart = -1, // onset-based slice start position (0.0-1.0, -1 for even slicing)
-    			sliceEnd = -1,   // onset-based slice end position (0.0-1.0, -1 for even slicing)
+    			sliceStart = 0.0, // slice start position (0.0-1.0, calculated in Go)
+    			sliceEnd = 1.0,   // slice end position (0.0-1.0, calculated in Go)
     			trackOut,
     			effectDry = 1.0,
     			effectDryOut,
@@ -523,19 +522,11 @@ Routine{
     			var timestretchPos, timestretchRate, effectTimestretch;
     			var side, atk, rel, depth, slopeAbove, thresh, ducked;
 
-    			sliceNum = sliceNum.mod(sliceCount);
-    			// Use onset-based positions if provided, otherwise use even slicing
-    			pos = Select.kr(sliceStart >= 0, [
-    				// Even slicing (default)
-    				Select.kr(effectReverse>0,[
-    					sliceNum / sliceCount,
-    					((sliceNum+1).mod(sliceCount))/sliceCount
-    				]),
-    				// Onset-based slicing
-    				Select.kr(effectReverse>0,[
-    					sliceStart,
-    					sliceEnd
-    				])
+    			// Position is always provided by Go code (sliceStart and sliceEnd)
+    			// Handle reverse playback by swapping start and end
+    			pos = Select.kr(effectReverse>0,[
+    				sliceStart,  // forward: use start position
+    				sliceEnd     // reverse: use end position
     			]);
     			// compute seconds left
     			secondsLeft = Select.kr(effectReverse > 0, [

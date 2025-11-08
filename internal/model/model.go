@@ -1148,8 +1148,8 @@ func NewSamplerOSCParams(filename string, trackId int, sliceCount, sliceNumber i
 		SyncToBPM:             1,  // Default Yes (1)
 		Update:                0,  // Default is not an update
 		DuckingIndex:          -1, // Default no ducking
-		SliceStart:            -1, // -1 means use even slicing
-		SliceEnd:              -1, // -1 means use even slicing
+		SliceStart:            0.0, // Will be calculated based on sliceNumber
+		SliceEnd:              0.0, // Will be calculated based on sliceNumber
 	}
 }
 
@@ -1189,8 +1189,8 @@ func NewSamplerOSCParamsWithRetrigger(filename string, trackId, sliceCount, slic
 		DeltaTime:             deltaTime, // Delta time in seconds
 		Update:                0,         // Default is not an update
 		DuckingIndex:          -1,        // Default no ducking
-		SliceStart:            -1,        // -1 means use even slicing
-		SliceEnd:              -1,        // -1 means use even slicing
+		SliceStart:            0.0,        // Will be calculated based on sliceNumber
+		SliceEnd:              0.0,        // Will be calculated based on sliceNumber
 	}
 }
 
@@ -1752,8 +1752,6 @@ func (m *Model) SendOSCSamplerMessage(params SamplerOSCParams) {
 	msg.Append(float32(m.TrackSetLevels[params.TrackId]))
 	msg.Append("sliceCount")
 	msg.Append(int32(params.SliceCount))
-	msg.Append("sliceNum")
-	msg.Append(int32(params.SliceNumber))
 	msg.Append("sliceDurationBeats")
 	msg.Append(float32(params.SliceDuration))
 	msg.Append("bpmSource")
@@ -1824,13 +1822,11 @@ func (m *Model) SendOSCSamplerMessage(params SamplerOSCParams) {
 	msg.Append("synctobpm")
 	msg.Append(int32(params.SyncToBPM))
 
-	// Add onset-based slicing parameters if available
-	if params.SliceStart >= 0 && params.SliceEnd >= 0 {
-		msg.Append("sliceStart")
-		msg.Append(float32(params.SliceStart))
-		msg.Append("sliceEnd")
-		msg.Append(float32(params.SliceEnd))
-	}
+	// Always add slicing parameters (calculated in Go for both even and onset-based slicing)
+	msg.Append("sliceStart")
+	msg.Append(float32(params.SliceStart))
+	msg.Append("sliceEnd")
+	msg.Append(float32(params.SliceEnd))
 
 	// Add update parameter when this is an update to a playing row
 	if params.Update == 1 {

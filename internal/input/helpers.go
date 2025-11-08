@@ -1003,8 +1003,9 @@ func EmitRowDataFor(m *model.Model, phrase, row, trackId int, isUpdate ...bool) 
 		oscParams = model.NewSamplerOSCParams(effectiveFilename, trackId, sliceCount, sliceNumber, bpmSource, m.BPM, sliceDuration, deltaTimeSeconds, velocity)
 	}
 
-	// Apply onset-based slicing if enabled
+	// Calculate slice start and end positions based on slicing type
 	if exists && fileMetadata.SliceType == 1 && len(fileMetadata.Onsets) > 0 {
+		// Onset-based slicing: use detected onset positions
 		// Calculate which onset to use with modulo wrapping
 		// Handle negative slice numbers by wrapping around
 		onsetIndex := sliceNumber % len(fileMetadata.Onsets)
@@ -1035,6 +1036,20 @@ func EmitRowDataFor(m *model.Model, phrase, row, trackId int, isUpdate ...bool) 
 			log.Printf("Onset slicing: file=%s, slice=%d, onsetIndex=%d/%d, start=%.3f, end=%.3f", 
 				effectiveFilename, sliceNumber, onsetIndex, len(fileMetadata.Onsets), oscParams.SliceStart, oscParams.SliceEnd)
 		}
+	} else {
+		// Even slicing: calculate positions from slice number and slice count
+		// Normalize slice number to be within bounds
+		normalizedSliceNum := sliceNumber % sliceCount
+		if normalizedSliceNum < 0 {
+			normalizedSliceNum += sliceCount
+		}
+		
+		// Calculate start and end positions (0.0 to 1.0)
+		oscParams.SliceStart = float32(normalizedSliceNum) / float32(sliceCount)
+		oscParams.SliceEnd = float32(normalizedSliceNum+1) / float32(sliceCount)
+		
+		log.Printf("Even slicing: file=%s, slice=%d/%d, start=%.3f, end=%.3f", 
+			effectiveFilename, sliceNumber, sliceCount, oscParams.SliceStart, oscParams.SliceEnd)
 	}
 
 	// Pitch conversion from hex to float: 128 (0x80) = 0.0, range 0-254 maps to -24 to +24
