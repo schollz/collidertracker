@@ -402,6 +402,12 @@ func runColliderTracker(cmd *cobra.Command, args []string) {
 			sliceStart := float64(msg.Arguments[3].(float32))
 			sliceEnd := float64(msg.Arguments[4].(float32))
 			log.Printf("Track %d playhead: gate=%d pos=%.2f sliceStart=%.2f sliceEnd=%.2f", trackID, gate, pos, sliceStart, sliceEnd)
+			// Update model with playhead data
+			tm.model.PlayheadTrackID = trackID
+			tm.model.PlayheadGate = gate
+			tm.model.PlayheadPos = pos
+			tm.model.PlayheadSliceStart = sliceStart
+			tm.model.PlayheadSliceEnd = sliceEnd
 		}
 	})
 

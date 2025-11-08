@@ -169,6 +169,12 @@ type Model struct {
 	WaveformDuration      float64 // Total duration of the waveform file (cached)
 	WaveformSelectedSlice int     // Index of selected slice/marker (-1 if none)
 	WaveformPreviousView  types.ViewMode // View to return to when exiting waveform view
+	// Playhead tracking for waveform view
+	PlayheadTrackID    int     // Track ID of current playhead
+	PlayheadGate       int     // Gate status (0 = off, 1 = on)
+	PlayheadPos        float64 // Playhead position (0.0 to 1.0)
+	PlayheadSliceStart float64 // Current slice start position (0.0 to 1.0)
+	PlayheadSliceEnd   float64 // Current slice end position (0.0 to 1.0)
 }
 
 // Methods for modifying data structures

@@ -89,8 +89,12 @@ func RenderWaveformView(m *model.Model) string {
 		waveformFile = metadata.WaveformFile
 	}
 	
+	// Determine if we should show playhead (only if playing the current track)
+	showPlayhead := m.PlayheadGate == 1 && m.PlayheadTrackID == m.CurrentTrack
+	
 	waveformStr, err := renderWaveformWithMarkers(waveformFile, waveWidth, waveformHeight, 
-		m.WaveformStart, m.WaveformEnd, metadata.Onsets, m.WaveformSelectedSlice)
+		m.WaveformStart, m.WaveformEnd, metadata.Onsets, m.WaveformSelectedSlice,
+		showPlayhead, m.PlayheadPos, m.PlayheadSliceStart, m.PlayheadSliceEnd, duration)
 	if err != nil {
 		content.WriteString(styles.Label.Render(fmt.Sprintf("Error rendering waveform: %v", err)))
 		content.WriteString("\n")
@@ -120,7 +124,7 @@ func RenderWaveformView(m *model.Model) string {
 
 // renderWaveformWithMarkers renders a waveform with slice markers overlaid
 func renderWaveformWithMarkers(filepath string, width, height int, start, end float64, 
-	markers []float64, selectedMarker int) (string, error) {
+	markers []float64, selectedMarker int, showPlayhead bool, playheadPos, playheadSliceStart, playheadSliceEnd, totalDuration float64) (string, error) {
 	
 	// Load waveform
 	wf, err := gowaveform.LoadWaveform(filepath)
@@ -224,6 +228,52 @@ func renderWaveformWithMarkers(filepath string, width, height int, start, end fl
 		}
 	}
 	
+	// Calculate playhead positions if playing
+	var playheadPosX int = -1
+	var playheadSliceStartX int = -1
+	var playheadSliceEndX int = -1
+	
+	if showPlayhead {
+		// Convert playhead positions from 0.0-1.0 to absolute time
+		playheadTime := playheadPos * totalDuration
+		sliceStartTime := playheadSliceStart * totalDuration
+		sliceEndTime := playheadSliceEnd * totalDuration
+		
+		// Check if playhead is within visible range
+		if playheadTime >= start && playheadTime <= end {
+			playheadPosX = int(float64(width-1) * (playheadTime - start) / duration)
+			if playheadPosX < 0 {
+				playheadPosX = -1
+			} else if playheadPosX >= width {
+				playheadPosX = -1
+			}
+		}
+		
+		// Calculate slice range positions
+		if sliceStartTime >= start && sliceStartTime <= end {
+			playheadSliceStartX = int(float64(width-1) * (sliceStartTime - start) / duration)
+			if playheadSliceStartX < 0 {
+				playheadSliceStartX = 0
+			}
+		} else if sliceStartTime < start {
+			playheadSliceStartX = 0
+		}
+		
+		if sliceEndTime >= start && sliceEndTime <= end {
+			playheadSliceEndX = int(float64(width-1) * (sliceEndTime - start) / duration)
+			if playheadSliceEndX >= width {
+				playheadSliceEndX = width - 1
+			}
+		} else if sliceEndTime > end {
+			playheadSliceEndX = width - 1
+		}
+		
+		// Ensure start <= end
+		if playheadSliceStartX >= 0 && playheadSliceEndX >= 0 && playheadSliceStartX > playheadSliceEndX {
+			playheadSliceStartX, playheadSliceEndX = playheadSliceEndX, playheadSliceStartX
+		}
+	}
+	
 	// Convert high-resolution grid to block characters
 	var sb strings.Builder
 	centerY := height / 2
@@ -231,8 +281,11 @@ func renderWaveformWithMarkers(filepath string, width, height int, start, end fl
 	// ANSI color codes
 	const (
 		colorReset  = "\033[0m"
-		colorYellow = "\033[33m" // Unselected markers
+		colorGray   = "\033[90m" // Waveform base (dark gray)
+		colorYellow = "\033[33m" // Slice markers
 		colorCyan   = "\033[36m" // Selected marker
+		colorWhite  = "\033[97m" // Current slice region (bright white)
+		colorRed    = "\033[91m" // Playhead position (bright red)
 	)
 	
 	for y := 0; y < height; y++ {
@@ -247,14 +300,34 @@ func renderWaveformWithMarkers(filepath string, width, height int, start, end fl
 				char = getLowerHalfChar(grid, x, y, segmentsPerChar)
 			}
 			
-			// Apply color if this is a marker position
+			// Apply color based on priority (highest priority last):
+			// 1. Waveform base (gray)
+			// 2. Slice markers (yellow)
+			// 3. Current slice region (white)
+			// 4. Playhead position (red)
+			
+			color := colorGray // Default: gray waveform
+			
+			// Check if this is a slice marker
 			if x == selectedMarkerPos {
-				sb.WriteString(colorCyan + char + colorReset)
+				color = colorCyan
 			} else if markerPositions[x] {
-				sb.WriteString(colorYellow + char + colorReset)
-			} else {
-				sb.WriteString(char)
+				color = colorYellow
 			}
+			
+			// Check if within current slice region (override slice markers)
+			if showPlayhead && playheadSliceStartX >= 0 && playheadSliceEndX >= 0 {
+				if x >= playheadSliceStartX && x <= playheadSliceEndX {
+					color = colorWhite
+				}
+			}
+			
+			// Check if this is the playhead position (highest priority)
+			if showPlayhead && x == playheadPosX {
+				color = colorRed
+			}
+			
+			sb.WriteString(color + char + colorReset)
 		}
 		sb.WriteString("\n")
 	}
