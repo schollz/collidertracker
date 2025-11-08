@@ -14,6 +14,7 @@ import (
 	"github.com/hypebeast/go-osc/osc"
 	"github.com/schollz/onsets"
 
+	"github.com/schollz/collidertracker/internal/getbpm"
 	"github.com/schollz/collidertracker/internal/midiplayer"
 	"github.com/schollz/collidertracker/internal/types"
 )
@@ -2389,6 +2390,12 @@ func (m *Model) TriggerOnsetDetection(filePath string) {
 	m.onsetDetectionPending[filePath] = timer
 }
 
+// GenerateEqualSlices generates equal slices for a file immediately
+func (m *Model) GenerateEqualSlices(filePath string) {
+	// Equal slice generation is fast, so we don't need debouncing like onset detection
+	m.generateEqualSlices(filePath)
+}
+
 // performOnsetDetection performs the actual onset detection
 func (m *Model) performOnsetDetection(filePath string) {
 	// Get the current metadata
@@ -2446,6 +2453,60 @@ func (m *Model) performOnsetDetection(filePath string) {
 		// Note: This will need to be called through a proper mechanism
 		// For now, we'll just update the metadata
 	}()
+}
+
+// generateEqualSlices generates equal slices for a file and stores them in the Onsets array
+func (m *Model) generateEqualSlices(filePath string) {
+	// Get the current metadata
+	metadata, exists := m.FileMetadata[filePath]
+	if !exists {
+		log.Printf("Equal slice generation skipped: no metadata found for %s", filePath)
+		return
+	}
+
+	// Only proceed if SliceType is 0 (Equal/Even)
+	if metadata.SliceType != 0 {
+		return
+	}
+
+	// Get absolute path
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		log.Printf("Equal slice generation error: could not resolve path for %s: %v", filePath, err)
+		return
+	}
+
+	log.Printf("Generating equal slices for %s with %d slices", absPath, metadata.Slices)
+
+	// Get the audio file length
+	audioLength, _, _, err := getbpm.Length(absPath)
+	if err != nil {
+		log.Printf("Equal slice generation failed for %s: could not get audio length: %v", absPath, err)
+		return
+	}
+
+	// Calculate equal slice positions
+	slices := make([]float64, metadata.Slices)
+	sliceDuration := audioLength / float64(metadata.Slices)
+	
+	for i := 0; i < metadata.Slices; i++ {
+		slices[i] = float64(i) * sliceDuration
+	}
+
+	// Update the metadata with the generated slices
+	m.onsetDetectionMutex.Lock()
+	defer m.onsetDetectionMutex.Unlock()
+	
+	currentMetadata, exists := m.FileMetadata[filePath]
+	if !exists {
+		log.Printf("Equal slice generation completed but metadata was removed for %s", filePath)
+		return
+	}
+
+	currentMetadata.Onsets = slices
+	m.FileMetadata[filePath] = currentMetadata
+	
+	log.Printf("Equal slice generation completed for %s: generated %d slices", filePath, len(slices))
 }
 
 // GetSliceForSample returns the slice number to use for a given slice index and file

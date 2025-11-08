@@ -727,3 +727,98 @@ func TestSendOSCInstrumentMessageWithArpeggioInitialNote(t *testing.T) {
 	// This should send the full chord since no arpeggio is active
 	model.SendOSCInstrumentMessageWithArpeggio(noArpeggioParams)
 }
+
+func TestGenerateEqualSlices(t *testing.T) {
+	m := NewModel(0, "", false)
+
+	// Test with a real audio file
+	testFile := "../getbpm/Break120.wav"
+	
+	// Set up file metadata
+	m.FileMetadata[testFile] = types.FileMetadata{
+		BPM:         120.0,
+		Slices:      16,
+		SliceType:   0, // Equal mode
+		Playthrough: 0,
+		SyncToBPM:   1,
+	}
+
+	// Generate equal slices
+	m.GenerateEqualSlices(testFile)
+
+	// Verify that slices were generated
+	metadata := m.FileMetadata[testFile]
+	assert.Len(t, metadata.Onsets, 16, "Should generate 16 equal slices")
+
+	// Verify that slices are evenly spaced
+	// First slice should be at 0.0
+	assert.InDelta(t, 0.0, metadata.Onsets[0], 0.001, "First slice should start at 0.0")
+
+	// Check that slices are evenly spaced
+	if len(metadata.Onsets) > 1 {
+		sliceDuration := metadata.Onsets[1] - metadata.Onsets[0]
+		for i := 1; i < len(metadata.Onsets)-1; i++ {
+			actualDuration := metadata.Onsets[i+1] - metadata.Onsets[i]
+			assert.InDelta(t, sliceDuration, actualDuration, 0.001, 
+				"Slices should be evenly spaced (slice %d)", i)
+		}
+	}
+}
+
+func TestGenerateEqualSlicesWithDifferentCounts(t *testing.T) {
+	m := NewModel(0, "", false)
+	testFile := "../getbpm/Break120.wav"
+
+	testCases := []struct {
+		name       string
+		sliceCount int
+	}{
+		{"4 slices", 4},
+		{"8 slices", 8},
+		{"16 slices", 16},
+		{"32 slices", 32},
+		{"64 slices", 64},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			m.FileMetadata[testFile] = types.FileMetadata{
+				BPM:         120.0,
+				Slices:      tc.sliceCount,
+				SliceType:   0, // Equal mode
+				Playthrough: 0,
+				SyncToBPM:   1,
+			}
+
+			m.GenerateEqualSlices(testFile)
+
+			metadata := m.FileMetadata[testFile]
+			assert.Len(t, metadata.Onsets, tc.sliceCount, 
+				"Should generate %d equal slices", tc.sliceCount)
+			assert.InDelta(t, 0.0, metadata.Onsets[0], 0.001, 
+				"First slice should start at 0.0")
+		})
+	}
+}
+
+func TestGenerateEqualSlicesOnlyInEqualMode(t *testing.T) {
+	m := NewModel(0, "", false)
+	testFile := "../getbpm/Break120.wav"
+
+	// Set up file metadata with Onset mode (SliceType=1)
+	m.FileMetadata[testFile] = types.FileMetadata{
+		BPM:         120.0,
+		Slices:      16,
+		SliceType:   1, // Onset mode - should not generate equal slices
+		Playthrough: 0,
+		SyncToBPM:   1,
+	}
+
+	// Try to generate equal slices (should not do anything)
+	m.GenerateEqualSlices(testFile)
+
+	// Verify that no slices were generated (function should exit early)
+	metadata := m.FileMetadata[testFile]
+	assert.Len(t, metadata.Onsets, 0, 
+		"Should not generate slices when in Onset mode (SliceType=1)")
+}

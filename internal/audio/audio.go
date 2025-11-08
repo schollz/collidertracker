@@ -94,6 +94,8 @@ func SelectFile(m *model.Model) {
 			Playthrough: 0, // Default: Sliced
 			SyncToBPM:   1, // Default: Yes
 		}
+		// Generate equal slices for the default Even mode
+		m.GenerateEqualSlices(fullPath)
 	} else {
 		log.Printf("Could not get BPM for %s: %v", fullPath, err)
 	}

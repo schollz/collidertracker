@@ -40,6 +40,9 @@ func ModifyFileMetadataValue(m *model.Model, delta float32) {
 				// Trigger onset detection if in Onsets mode
 				if metadata.SliceType == 1 {
 					m.TriggerOnsetDetection(m.MetadataEditingFile)
+				} else {
+					// Trigger equal slice generation if in Equal mode
+					m.GenerateEqualSlices(m.MetadataEditingFile)
 				}
 			},
 			1, 999, fmt.Sprintf("file metadata Slices for %s", m.MetadataEditingFile),
@@ -55,6 +58,9 @@ func ModifyFileMetadataValue(m *model.Model, delta float32) {
 				// Trigger onset detection if switching to Onsets mode
 				if v == 1 {
 					m.TriggerOnsetDetection(m.MetadataEditingFile)
+				} else {
+					// Trigger equal slice generation if switching to Equal mode
+					m.GenerateEqualSlices(m.MetadataEditingFile)
 				}
 			},
 			0, 1, fmt.Sprintf("file metadata SliceType for %s", m.MetadataEditingFile),
