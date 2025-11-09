@@ -523,6 +523,9 @@ Routine{
     			var side, atk, rel, depth, slopeAbove, thresh, ducked;
 				var sliceStartOriginal = sliceStart;
 				var sliceEndOriginal = sliceEnd;
+				// Bounce mode variables
+				var bounceDir, bounceTrigger, bounceThreshold;
+				var sliceStartFrames, sliceEndFrames;
     			// Position is always provided by Go code (sliceStart and sliceEnd)
     			// Handle reverse playback by swapping start and end
 				
@@ -586,6 +589,15 @@ Routine{
     			volumeDB = volumeDB + (A2K.kr(retrigCount) * retrigVolumeChange) + (retrigVolumeChange.neg * retrigNumTotal * finalVolumeToStart);
 
 
+
+    			// === Bounce Mode Logic (playthrough=2) ===
+    			// Use LocalIn/LocalOut to track bounce direction and handle boundary detection
+    			bounceDir = LocalIn.kr(1, 1); // 1 = forward, -1 = backward; default to forward
+    			sliceStartFrames = sliceStartOriginal * frames;
+    			sliceEndFrames = sliceEndOriginal * frames;
+    			// Threshold for boundary detection (1 audio block = 64 samples at default settings)
+    			bounceThreshold = 64;
+
     			// do timestretching
     			sliceTrigger = sliceTrigger + ((effectTimestretch>1)*Impulse.ar(effectTimestretch/sliceSeconds));
 
@@ -594,19 +606,66 @@ Routine{
     			aOrB=ToggleFF.ar(sliceTrigger);
     			crossfade=VarLag.ar(K2A.ar(aOrB),xfade,warp:\sine);
 
+    			// === Phasor with Bounce Mode Support ===
+    			// In bounce mode, we use the direction from feedback to set the rate sign
+    			var rateA = Select.kr((\playthrough.ir(0) > 1.5) * (effectReverse < 0.5), [
+    				rate,  // Normal/oneshot mode: use rate as-is
+    				rate * bounceDir // Bounce mode: apply direction
+    			]);
+    			var rateB = rateA; // Both phasors use same rate in bounce mode
+
     			posA=Phasor.ar(
     				trig:(1-aOrB),
-    				rate:rate,
-    				end:frames,
-    				resetPos:timestretchRate,
+    				rate:rateA,
+    				start:sliceStartOriginal*frames,
+    				end:sliceEndOriginal*frames,
+    				resetPos:Select.kr((\playthrough.ir(0) > 1.5), [
+    					timestretchRate, // Normal mode: use timestretch
+    					Select.kr(bounceDir > 0, [
+    						sliceEndOriginal*frames,   // Going backward: reset to end
+    						sliceStartOriginal*frames  // Going forward: reset to start
+    					])
+    				]),
     			);
     			posB=Phasor.ar(
     				trig:aOrB,
-    				rate:rate,
-    				end:frames,
-    				resetPos:timestretchRate,
+    				rate:rateB,
+    				start:sliceStartOriginal*frames,
+    				end:sliceEndOriginal*frames,
+    				resetPos:Select.kr((\playthrough.ir(0) > 1.5), [
+    					timestretchRate, // Normal mode: use timestretch
+    					Select.kr(bounceDir > 0, [
+    						sliceEndOriginal*frames,   // Going backward: reset to end
+    						sliceStartOriginal*frames  // Going forward: reset to start
+    					])
+    				]),
     			);
 				posCur = Select.ar(aOrB,[posA,posB])/frames;
+
+    			// === Bounce Mode Direction Feedback ===
+    			// Detect when Phasor wraps (hits boundary) and flip direction
+    			// In bounce mode, when playhead reaches end going forward or start going backward,
+    			// Phasor will wrap and we flip the direction for next iteration
+    			var currentPos = Select.ar(aOrB, [posA, posB]);
+    			var prevPos = Delay1.ar(currentPos);
+    			// Detect wrap: position jumps from near end to near start (forward)
+    			// or from near start to near end (backward)
+    			var wrapForward = (prevPos > (sliceEndOriginal*frames - bounceThreshold)) *
+    			                   (currentPos < (sliceStartOriginal*frames + bounceThreshold)) *
+    			                   (bounceDir > 0);
+    			var wrapBackward = (prevPos < (sliceStartOriginal*frames + bounceThreshold)) *
+    			                    (currentPos > (sliceEndOriginal*frames - bounceThreshold)) *
+    			                    (bounceDir < 0);
+    			var didWrap = (wrapForward + wrapBackward) * (\playthrough.ir(0) > 1.5);
+    			// Flip direction when wrap detected
+    			var nextBounceDir = Select.kr(didWrap > 0, [
+    				bounceDir,        // No wrap: keep direction
+    				bounceDir * -1    // Wrap detected: flip direction
+    			]);
+    			LocalOut.kr(nextBounceDir);
+
+
+
     			snd=(BufRd.ar(
     				numChannels:ch+1,
     				bufnum:buf,
