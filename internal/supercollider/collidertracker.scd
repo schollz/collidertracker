@@ -403,7 +403,7 @@ Routine{
     		effectComb = 0.0, effectCombOut
     		;
     		var snd, ducked;
-    		snd = SoundIn.ar([0,1]) * EnvGen.ar(Env.adsr(1.0,0.0,1.0,1.0),1);
+    		snd = SoundIn.ar([0,1]) * EnvGen.ar(Env.adsr(1.0,0.0,1.0,1.0),1) * DC.ar(0); // TODO:remove 0
     		snd = Balance2.ar(snd[0], snd[1], pan);
     		snd = snd * -10.dbamp * trackVolume.dbamp;
 
@@ -1315,8 +1315,8 @@ Routine{
 			\playthrough, 0,
 			\synctobpm, 1,
 			\sliceDurationBeats, 8,
-			\sliceStart, 0.5,
-			\sliceEnd, 0.5+0.125,
+			\sliceStart, 0.9,
+			\sliceEnd, 0.95,
 		);
 
     }.play;
