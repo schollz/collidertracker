@@ -34,7 +34,6 @@ debug.log
 collidertracker
 collidertracker.exe
 tracker-save.json
-internal/sox/test.wav
 cpu.prof
 test-tracker.json
 Limewax/*
@@ -42,7 +41,6 @@ Limewax/*
 *.mkv
 save/*
 *.gz
-soxstatic/*
 .claude/*
 save1/*
 *.log

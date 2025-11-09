@@ -65,7 +65,6 @@ jobs:
 
             depends_on "go" => :build
             depends_on "pkg-config" => :build
-            depends_on "sox"
             depends_on "rtmidi"
 
             def install

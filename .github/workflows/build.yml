@@ -24,7 +24,6 @@ jobs:
           brew update
           brew install pkg-config
           brew install rtmidi
-          brew install sox
 
       - uses: actions/setup-go@v6
         with:
@@ -60,7 +59,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev sox zip
+          sudo apt-get install -y libasound2-dev zip
 
       - uses: actions/setup-go@v6
         with:
@@ -100,7 +99,6 @@ jobs:
             libtool \
             linux-headers \
             alsa-lib-dev \
-            sox \
             zip
 
       - uses: actions/checkout@v5
@@ -160,37 +158,7 @@ jobs:
       - name: Install required packages
         shell: msys2 {0}
         run: |
-          pacman -S --noconfirm mingw-w64-x86_64-rtmidi mingw-w64-x86_64-toolchain mingw-w64-x86_64-sox
-
-      - name: Copy sox.exe and dependencies to build directory
-        shell: msys2 {0}
-        run: |
-          # Copy sox executable
-          cp /mingw64/bin/sox.exe .
-
-          # Copy required DLL dependencies for sox
-          cp /mingw64/bin/libsox-*.dll . || true
-          cp /mingw64/bin/libgomp-*.dll . || true
-          cp /mingw64/bin/libgcc_s_seh-*.dll . || true
-          cp /mingw64/bin/libwinpthread-*.dll . || true
-          cp /mingw64/bin/libstdc++-*.dll . || true
-          cp /mingw64/bin/libFLAC-*.dll . || true
-          cp /mingw64/bin/libogg-*.dll . || true
-          cp /mingw64/bin/libvorbis-*.dll . || true
-          cp /mingw64/bin/libvorbisenc-*.dll . || true
-          cp /mingw64/bin/libvorbisfile-*.dll . || true
-          cp /mingw64/bin/libopus-*.dll . || true
-          cp /mingw64/bin/libmpg123-*.dll . || true
-          cp /mingw64/bin/libmad-*.dll . || true
-          cp /mingw64/bin/libid3tag-*.dll . || true
-          cp /mingw64/bin/libwavpack-*.dll . || true
-          cp /mingw64/bin/libsndfile-*.dll . || true
-          cp /mingw64/bin/liblzma-*.dll . || true
-          cp /mingw64/bin/libbz2-*.dll . || true
-          cp /mingw64/bin/zlib*.dll . || true
-
-          echo "Copied sox and dependencies:"
-          ls -lh *.exe *.dll || true
+          pacman -S --noconfirm mingw-w64-x86_64-rtmidi mingw-w64-x86_64-toolchain
 
       - name: Set up environment variables for Go
         shell: pwsh
@@ -217,11 +185,9 @@ jobs:
       - name: Zip binary (Windows)
         shell: pwsh
         run: |
-          # Create a list of all files to include (collidertracker.exe, sox.exe, and all DLLs)
-          $files = @("collidertracker.exe", "sox.exe") + (Get-ChildItem -Filter "*.dll" | Select-Object -ExpandProperty Name)
-          Compress-Archive -Path $files -DestinationPath collidertracker_windows.zip -Force
+          Compress-Archive -Path "collidertracker.exe" -DestinationPath collidertracker_windows.zip -Force
           Write-Host "Bundled files in collidertracker_windows.zip:"
-          Get-ChildItem -Filter "collidertracker.exe","sox.exe","*.dll" | Format-Table Name, Length
+          Get-ChildItem -Filter "collidertracker.exe" | Format-Table Name, Length
 
       - name: Upload artifact (Windows)
         uses: actions/upload-artifact@v4

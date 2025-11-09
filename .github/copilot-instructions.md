@@ -20,11 +20,11 @@ ColliderTracker is a terminal-based music tracker that integrates with SuperColl
 ```bash
 # Linux (Ubuntu/Debian)
 sudo apt-get update
-sudo apt-get install -y libasound2-dev sox
+sudo apt-get install -y libasound2-dev
 
 # macOS
 brew update
-brew install pkg-config rtmidi sox
+brew install pkg-config rtmidi
 
 # Windows (MSYS2)
 pacman -S --noconfirm mingw-w64-x86_64-rtmidi mingw-w64-x86_64-toolchain
@@ -32,7 +32,6 @@ pacman -S --noconfirm mingw-w64-x86_64-rtmidi mingw-w64-x86_64-toolchain
 
 **Why these are required:**
 - `libasound2-dev` (Linux): Required for ALSA MIDI support via rtmidi
-- `sox`: Audio file processing utility
 - `rtmidi`: MIDI I/O library (macOS/Windows)
 - `pkg-config`: Build tool for finding library paths
 

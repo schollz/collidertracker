@@ -5,42 +5,15 @@ import (
 	"log"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
+	"github.com/schollz/audiomorph"
 	"github.com/schollz/collidertracker/internal/getbpm"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/storage"
 	"github.com/schollz/collidertracker/internal/types"
 )
-
-// findSoxExecutable searches for sox in the following order:
-// 1. Bundled sox executable in the same directory as collidertracker
-// 2. sox in system PATH
-func findSoxExecutable() string {
-	// Get the directory where the current executable is located
-	exePath, err := os.Executable()
-	if err == nil {
-		exeDir := filepath.Dir(exePath)
-
-		// Check for bundled sox executable
-		soxName := "sox"
-		if runtime.GOOS == "windows" {
-			soxName = "sox.exe"
-		}
-
-		bundledSox := filepath.Join(exeDir, soxName)
-		if _, err := os.Stat(bundledSox); err == nil {
-			log.Printf("Using bundled sox: %s", bundledSox)
-			return bundledSox
-		}
-	}
-
-	// Fall back to sox in PATH
-	return "sox"
-}
 
 // ConvertToWaveformFile converts an audio file to 16-bit mono .wav format for waveform visualization
 // Returns the path to the converted file, or an error if conversion fails
@@ -50,13 +23,13 @@ func ConvertToWaveformFile(inputPath string, projectDir string) (string, error) 
 	if err := os.MkdirAll(waveformDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create waveforms directory: %w", err)
 	}
-	
+
 	// Generate output filename: use basename + _waveform.wav
 	baseName := filepath.Base(inputPath)
 	ext := filepath.Ext(baseName)
 	nameWithoutExt := strings.TrimSuffix(baseName, ext)
 	outputPath := filepath.Join(waveformDir, nameWithoutExt+"_waveform.wav")
-	
+
 	// Check if converted file already exists and is newer than source
 	if info, err := os.Stat(outputPath); err == nil {
 		sourceInfo, err := os.Stat(inputPath)
@@ -66,16 +39,35 @@ func ConvertToWaveformFile(inputPath string, projectDir string) (string, error) 
 			return outputPath, nil
 		}
 	}
-	
-	// Use sox to convert to 16-bit mono wav
-	// sox input.ext -c 1 -b 16 output.wav
-	soxPath := findSoxExecutable()
-	cmd := exec.Command(soxPath, inputPath, "-c", "1", "-b", "16", outputPath)
-	output, err := cmd.CombinedOutput()
+
+	// Use audiomorph to decode the audio file
+	audio, err := audiomorph.DecodeFile(inputPath)
 	if err != nil {
-		return "", fmt.Errorf("sox conversion failed: %w (output: %s)", err, string(output))
+		return "", fmt.Errorf("failed to decode audio file: %w", err)
 	}
-	
+
+	// Convert to mono if needed by averaging channels
+	if audio.NumChannels > 1 {
+		monoData := make([]int, len(audio.Data[0]))
+		for i := range monoData {
+			sum := 0
+			for ch := 0; ch < audio.NumChannels; ch++ {
+				sum += audio.Data[ch][i]
+			}
+			monoData[i] = sum / audio.NumChannels
+		}
+		audio.Data = [][]int{monoData}
+		audio.NumChannels = 1
+	}
+
+	// Set to 16-bit depth
+	audio.BitDepth = 16
+
+	// Encode to WAV file
+	if err := audiomorph.EncodeFile(audio, outputPath); err != nil {
+		return "", fmt.Errorf("failed to encode WAV file: %w", err)
+	}
+
 	log.Printf("Converted audio file for waveform: %s -> %s", inputPath, outputPath)
 	return outputPath, nil
 }

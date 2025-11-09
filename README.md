@@ -426,7 +426,7 @@ The application now uses a local folder structure (tracker-save/) instead of a s
 
    ```bash
    brew update
-   brew install pkg-config rtmidi sox
+   brew install pkg-config rtmidi
    ```
 
 2. **Set environment variables**:
@@ -449,10 +449,10 @@ The application now uses a local folder structure (tracker-save/) instead of a s
 
    ```bash
    sudo apt-get update
-   sudo apt-get install -y libasound2-dev sox
+   sudo apt-get install -y libasound2-dev
    ```
 
-   **For other distros**: Install equivalent packages for ALSA development headers and SoX
+   **For other distros**: Install equivalent packages for ALSA development headers
 
 2. **Set environment variables**:
 
@@ -472,7 +472,7 @@ For a fully static binary that runs on any Linux system:
 1. **Use Alpine Linux environment** (Docker recommended):
    ```bash
    docker run --rm -v $(pwd):/workspace -w /workspace golang:1.25-alpine sh -c '
-   apk add --no-cache git build-base autoconf automake libtool linux-headers alsa-lib-dev sox &&
+   apk add --no-cache git build-base autoconf automake libtool linux-headers alsa-lib-dev &&
    cd /tmp &&
    git clone https://github.com/alsa-project/alsa-lib.git &&
    cd alsa-lib && git checkout v1.2.10 &&
