@@ -45,23 +45,7 @@ func ConvertToWaveformFile(inputPath string, projectDir string) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("failed to decode audio file: %w", err)
 	}
-
-	// Convert to mono if needed by averaging channels
-	if audio.NumChannels > 1 {
-		monoData := make([]int, len(audio.Data[0]))
-		for i := range monoData {
-			sum := 0
-			for ch := 0; ch < audio.NumChannels; ch++ {
-				sum += audio.Data[ch][i]
-			}
-			monoData[i] = sum / audio.NumChannels
-		}
-		audio.Data = [][]int{monoData}
-		audio.NumChannels = 1
-	}
-
-	// Set to 16-bit depth
-	audio.BitDepth = 16
+	audio.Mono = true
 
 	// Encode to WAV file
 	if err := audiomorph.EncodeFile(audio, outputPath); err != nil {
@@ -71,7 +55,6 @@ func ConvertToWaveformFile(inputPath string, projectDir string) (string, error) 
 	log.Printf("Converted audio file for waveform: %s -> %s", inputPath, outputPath)
 	return outputPath, nil
 }
-
 
 func PlayFile(m *model.Model) {
 	if len(m.Files) == 0 || m.CurrentRow >= len(m.Files) {

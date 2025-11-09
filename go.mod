@@ -11,7 +11,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lucasb-eyer/go-colorful v1.3.0
 	github.com/muesli/termenv v0.16.0
-	github.com/schollz/audiomorph v0.1.0
+	github.com/schollz/audiomorph v0.2.0
 	github.com/schollz/gowaveform v0.1.0
 	github.com/schollz/onsets v0.2.0
 	github.com/spf13/cobra v1.10.1
@@ -55,6 +55,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/schollz/goflac v0.1.0 // indirect
+	github.com/schollz/govorbis v0.0.0-20251109143319-a6ba845ab65e // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sys v0.37.0 // indirect
