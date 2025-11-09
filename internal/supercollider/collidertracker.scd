@@ -149,7 +149,7 @@ Routine{
     		var ducked;
     		var cutoff = \lowPassFilter.kr(20000);
     		var res = \resonance.kr(0.5).clip(0.1, 3.0);
-    		var freq = \note.kr(60).min(127).max(0).midicps.poll;
+    		var freq = \note.kr(60).min(127).max(0).midicps;
     		var glideFreq = Lag.kr(freq, \glide.kr(0.0).max(0.001));
     		var waveMix = Lag.kr(\mixWave.kr(0.5).clip(0,1));
 
@@ -490,6 +490,7 @@ Routine{
     			sliceCount = 32, // number of slices to cut the sample into
     			sliceStart = 0.0, // slice start position (0.0-1.0, calculated in Go)
     			sliceEnd = 1.0,   // slice end position (0.0-1.0, calculated in Go)
+				sliceBounce = 0.0,
     			trackOut,
     			effectDry = 1.0,
     			effectDryOut,
@@ -508,7 +509,7 @@ Routine{
     			;
     			var snd,sndA,sndB,crossfade,aOrB;
     			var sndDry, sndReverb, sndComb;
-    			var posA,posB,posCur;
+    			var posA,posB,posCur,posCurFeedback,posCurFeedbackLast;
     			var retrigTrig, retrigCount;
     			var frames=BufFrames.ir(buf);
     			var syncBpm=(\synctobpm.ir(0) * bpmTarget/bpmSource) + (1 - \synctobpm.ir(0));
@@ -523,6 +524,8 @@ Routine{
     			var side, atk, rel, depth, slopeAbove, thresh, ducked;
 				var sliceStartOriginal = sliceStart;
 				var sliceEndOriginal = sliceEnd;
+				var localInData;
+				var bounceToggled;
     			// Position is always provided by Go code (sliceStart and sliceEnd)
     			// Handle reverse playback by swapping start and end
 				
@@ -530,6 +533,7 @@ Routine{
     				sliceStart,  // forward: use start position
     				sliceEnd     // reverse: use end position
     			]);
+
     			// compute seconds left
     			secondsLeft = Select.kr(effectReverse > 0, [
     				(seconds * (1 - pos)), // forward: seconds to end
@@ -566,7 +570,10 @@ Routine{
     			rate = rate * (2 ** (pitch/12.0));
 
     			// Calculate retriggers
-    			retrigCountFeedback = LocalIn.ar(1);
+    			localInData = LocalIn.ar(3);
+				retrigCountFeedback = localInData[0];
+				posCurFeedback = localInData[1];
+				posCurFeedbackLast = localInData[2];
     			retrigTrig = Impulse.ar(XLine.ar(retrigRateStart,retrigRateEnd,beatDuration*retrigRateChangeBeats) / beatDuration);
     			retrigCount = PulseCount.ar(retrigTrig * (retrigCountFeedback<retrigNumTotal));
     			sliceTrigger = sliceTrigger + (retrigTrig*(retrigCount<retrigNumTotal));
@@ -581,6 +588,26 @@ Routine{
     				rate,
     				rate * -1,
     			]);
+
+				bounceToggled = ToggleFF.kr(
+					(
+						(sliceBounce > 0)
+						* (posCurFeedback > (sliceEndOriginal - 0.01))
+						* (posCurFeedbackLast <= (sliceEndOriginal - 0.01))
+					)
+					+
+					(
+						(sliceBounce > 0)
+						* (posCurFeedback < (sliceStartOriginal + 0.01))
+						* (posCurFeedbackLast >= (sliceStartOriginal + 0.01))
+					)
+				);
+				rate = rate * Select.kr(
+					bounceToggled
+				,[
+					1.0,
+					-1.0,
+				]);
 
     			// Change volume based on retrigger
     			volumeDB = volumeDB + (A2K.kr(retrigCount) * retrigVolumeChange) + (retrigVolumeChange.neg * retrigNumTotal * finalVolumeToStart);
@@ -627,7 +654,7 @@ Routine{
     					EnvGen.ar(Env.new([0,1,1,0],[sliceAttackBeats,sliceDurationBeats,sliceReleaseBeats]*beatDuration,[-4,4]), sliceTrigger))
     					// playthrough = 1, playthrough mode
     					+ (\playthrough.ir(0) *
-    					EnvGen.ar(Env.new([0,1,1,0],[0.001,secondsLeft.poll-(0.005),0.001],[-4,4]), 1, doneAction:2 * \playthrough.ir(0))
+    					EnvGen.ar(Env.new([0,1,1,0],[0.001,secondsLeft-(0.005),0.001],[-4,4]), 1, doneAction:2 * \playthrough.ir(0))
     					)
     				);
 
@@ -688,7 +715,7 @@ Routine{
 				]);
 
     			// Feedback
-    			LocalOut.ar(retrigCount);
+    			LocalOut.ar([retrigCount,posCur, posCurFeedback]);
     			Out.ar(trackOut, snd*(1.0 - effectReverb));
     			Out.ar(effectDryOut, snd*effectDry);
     			Out.ar(effectCombOut, snd*XLine.kr(0.001,effectComb,sliceDurationBeats*beatDuration/2));
@@ -1288,7 +1315,7 @@ Routine{
 			"/sampler",
 			"/home/zns/Documents/collidertracker/break/49_jij.wav",
 			0,
-			\trackVolume, 0.0,
+			\trackVolume, 12.0,
 			\sliceCount, 64,
 			\bpmSource, 175.0,
 			\bpmTarget, 171.0,
@@ -1314,9 +1341,10 @@ Routine{
 			\deltaTime, 0.17543859779835,
 			\playthrough, 0,
 			\synctobpm, 1,
-			\sliceDurationBeats, 8,
-			\sliceStart, 0.9,
-			\sliceEnd, 0.95,
+			\sliceDurationBeats, 32,
+			\sliceStart, 0,
+			\sliceEnd, 0.125,
+			\sliceBounce, 1,
 		);
 
     }.play;
