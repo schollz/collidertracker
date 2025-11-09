@@ -1024,6 +1024,10 @@ Routine{
     	OSCFunc({ |msg|
     		var filename = msg[1];
     		msg.postln;
+			// log every key/value pair
+			msg.do({ |v,i|
+				[i,v].postln;
+			});
     		if (~sampleCache.at(filename).isNil,{
     			// load sample
     			~sampleCache.put(filename, Buffer.read(s,filename,action:{ |b|
@@ -1142,7 +1146,7 @@ Routine{
     		NetAddr.new("127.0.0.1", 57121).sendMsg("/waveform", msg[3]);
     	},'/waveform');
 		OSCFunc({ |msg|
-			NetAddr.new("127.0.0.1", 57121).sendMsg("/sampler_playhead", *msg[3..]);
+			NetAddr.new("127.0.0.1", 57121).sendMsg("/sampler_playhead", *msg[3..].postln);
 		},'/sampler_playhead');
     	OSCFunc({ |msg|
     		NetAddr.new("127.0.0.1", 57121).sendMsg("/track_volume", *msg[3..]);
@@ -1259,53 +1263,61 @@ Routine{
     	}.play;
 
 
-    	// ~bpmTarget = 180;
-    	// ~sliceNum = 32;
-    	// Routine {
-    	// 	inf.do({ arg beat;
-    	// 		var sliceNum = beat.mod(~sliceNum);
-    	// 		["playing",beat].postln;
-    	// 		NetAddr.new("127.0.0.1", NetAddr.langPort).sendMsg("/sampler", "amen_5c2d11c8_beats16_bpm170.flac",
-    	// 			\sliceCount, 32,
-    	// 			\sliceNum, sliceNum,
-    	// 			\sliceDurationBeats, 100,
-    	// 			\bpmSource, 170,
-    	// 			\bpmTarget, ~bpmTarget,
-    	// 			\effectTimestretchStart, 3.rand,
-    	// 			\effectTimestretchEnd, 8.rand,
-    	// 			\effectTimestretchBeats, 8.rand,
-    	// 			\retrigNumTotal, 16.rand,
-    	// 			\retrigRateStart, 16.rand,
-    	// 			\retrigPitchChange,-1,
-    	// 			\retrigVolumeChange,-2,
-    	// 			\effectComb, (100.rand)/100.0,
-    	// 		);
-
-    	// 		(60/~bpmTarget/2).wait;
-    	// 	});
-    	// }.play;
-    	// Routine {
-    	// 	NetAddr.new("127.0.0.1", NetAddr.langPort).sendMsg("/instrument",0,1,60.1,63.9,67,"duration",2,"attack",1,"release",2);
-    	// }.play;
 
     	//Server.default.record;
     	["playing startupSound"].postln;
     	// Synth.head(Server.default,"startupSound",[\out,~busDry]);
-    	[48,64,67,72].do({ |n|
-    		Synth.head(Server.default,"SuperSaw",[
-    			\note,n-12,\duration,4,\effectDryOut, ~busDry,\effectCombOut, ~busComb,\effectReverbOut, ~busReverb,
-    			\attack, 3.0,
-    			\release, 3.0,
-    			\sustain, 1.0,
-    			\effectReverb, 0.3,
-    			\lowPassFilter, 200,
-    			\lpa, 1,
-    			\lpenv, 7.0,
-    			\drive, 1.0,
-    			\noteSize, 4,
-    			\trackVolume, -12,
-    		]);
-    	});
+    	// [48,64,67,72].do({ |n|
+    	// 	Synth.head(Server.default,"SuperSaw",[
+    	// 		\note,n-12,\duration,4,\effectDryOut, ~busDry,\effectCombOut, ~busComb,\effectReverbOut, ~busReverb,
+    	// 		\attack, 3.0,
+    	// 		\release, 3.0,
+    	// 		\sustain, 1.0,
+    	// 		\effectReverb, 0.3,
+    	// 		\lowPassFilter, 200,
+    	// 		\lpa, 1,
+    	// 		\lpenv, 7.0,
+    	// 		\drive, 1.0,
+    	// 		\noteSize, 4,
+    	// 		\trackVolume, -12,
+    	// 	]);
+    	// });
+
+
+		NetAddr.new("127.0.0.1", NetAddr.langPort).sendMsg(
+			"/sampler",
+			"/home/zns/Documents/collidertracker/break/49_jij.wav",
+			0,
+			\trackVolume, 0.0,
+			\sliceCount, 64,
+			\bpmSource, 175.0,
+			\bpmTarget, 171.0,
+			\pitch, 0.0,
+			\retrigNumTotal, 0,
+			\retrigRateChangeBeats, 0.0,
+			\retrigRateStart, 0.0,
+			\retrigRateEnd, 0.0,
+			\retrigPitchChange, 0.0,
+			\retrigVolumeChange, 0.0,
+			\finalPitchToStart, 0,
+			\finalVolumeToStart, 0,
+			\effectTimestretchStart, 0.0,
+			\effectTimestretchEnd, 0.0,
+			\effectTimestretchBeats, 0.0,
+			\effectReverse, 0,
+			\pan, 0.0,
+			\lowPassFilter, 20000.0,
+			\highPassFilter, 20.0,
+			\effectComb, 0.0,
+			\effectReverb, 0.0,
+			\velocity, 64,
+			\deltaTime, 0.17543859779835,
+			\playthrough, 0,
+			\synctobpm, 1,
+			\sliceDurationBeats, 8,
+			\sliceStart, 0.5,
+			\sliceEnd, 0.5+0.125,
+		);
 
     }.play;
 
