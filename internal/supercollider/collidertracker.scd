@@ -491,6 +491,7 @@ Routine{
     			sliceStart = 0.0, // slice start position (0.0-1.0, calculated in Go)
     			sliceEnd = 1.0,   // slice end position (0.0-1.0, calculated in Go)
 				sliceBounce = 0.0,
+				sliceStop = 0.0,
     			trackOut,
     			effectDry = 1.0,
     			effectDryOut,
@@ -525,7 +526,7 @@ Routine{
 				var sliceStartOriginal = sliceStart;
 				var sliceEndOriginal = sliceEnd;
 				var localInData;
-				var bounceToggled;
+				var endToggled;
     			// Position is always provided by Go code (sliceStart and sliceEnd)
     			// Handle reverse playback by swapping start and end
 				
@@ -589,25 +590,14 @@ Routine{
     				rate * -1,
     			]);
 
-				bounceToggled = ToggleFF.kr(
-					(
-						(sliceBounce > 0)
-						* (posCurFeedback > (sliceEndOriginal - 0.01))
-						* (posCurFeedbackLast <= (sliceEndOriginal - 0.01))
-					)
+				endToggled = ToggleFF.kr(
+					((posCurFeedback > (sliceEndOriginal - 0.01)) * (posCurFeedbackLast <= (sliceEndOriginal - 0.01)))
 					+
-					(
-						(sliceBounce > 0)
-						* (posCurFeedback < (sliceStartOriginal + 0.01))
-						* (posCurFeedbackLast >= (sliceStartOriginal + 0.01))
-					)
+					((posCurFeedback < (sliceStartOriginal + 0.01)) * (posCurFeedbackLast >= (sliceStartOriginal + 0.01)))
 				);
-				rate = rate * Select.kr(
-					bounceToggled
-				,[
-					1.0,
-					-1.0,
-				]);
+				// bounce if end toggled
+				rate = rate * Select.kr(endToggled * sliceBounce,[1.0,-1.0]);
+
 
     			// Change volume based on retrigger
     			volumeDB = volumeDB + (A2K.kr(retrigCount) * retrigVolumeChange) + (retrigVolumeChange.neg * retrigNumTotal * finalVolumeToStart);
