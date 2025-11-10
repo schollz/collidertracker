@@ -1102,11 +1102,13 @@ type SamplerOSCParams struct {
 	EffectReverb          float32 // 0.0 .. 1.0
 	DuckingIndex          int     // Ducking settings index (DU parameter)
 	Velocity              int     // 0 .. 127 (0x00-0x7F)
-	Playthrough           int     // 0=Sliced, 1=Oneshot
+	Playthrough           int     // 0=Sliced, 1=Oneshot, 2=Slice Bounce, 3=Slice Stop
 	SyncToBPM             int     // 0=No, 1=Yes
 	Update                int     // 1 if this is an update to a playing row, 0 otherwise
 	SliceStart            float32 // Start position for onset-based slicing (0.0-1.0, -1 for even slicing)
 	SliceEnd              float32 // End position for onset-based slicing (0.0-1.0, -1 for even slicing)
+	SliceBounce           float32 // 0.0 or 1.0, set to 1.0 when Playthrough=2 (Slice Bounce)
+	SliceStop             float32 // 0.0 or 1.0, set to 1.0 when Playthrough=3 (Slice Stop)
 }
 
 type InstrumentOSCParams struct {
@@ -1849,6 +1851,12 @@ func (m *Model) SendOSCSamplerMessage(params SamplerOSCParams) {
 	msg.Append(float32(params.SliceStart))
 	msg.Append("sliceEnd")
 	msg.Append(float32(params.SliceEnd))
+
+	// Add sliceBounce and sliceStop parameters
+	msg.Append("sliceBounce")
+	msg.Append(float32(params.SliceBounce))
+	msg.Append("sliceStop")
+	msg.Append(float32(params.SliceStop))
 
 	// Add update parameter when this is an update to a playing row
 	if params.Update == 1 {

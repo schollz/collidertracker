@@ -1184,6 +1184,16 @@ func EmitRowDataFor(m *model.Model, phrase, row, trackId int, isUpdate ...bool) 
 	oscParams.Playthrough = playthrough
 	oscParams.SyncToBPM = syncToBPM
 
+	// Set sliceBounce and sliceStop based on playthrough mode
+	// playthrough: 0=Sliced, 1=Oneshot, 2=Slice Bounce, 3=Slice Stop
+	oscParams.SliceBounce = 0.0
+	oscParams.SliceStop = 0.0
+	if playthrough == 2 {
+		oscParams.SliceBounce = 1.0
+	} else if playthrough == 3 {
+		oscParams.SliceStop = 1.0
+	}
+
 	// Set update flag if this is an update call
 	if shouldUpdate {
 		oscParams.Update = 1

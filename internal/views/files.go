@@ -26,7 +26,7 @@ func RenderFileMetadataView(m *model.Model) string {
 
 		// Helper to get option text
 		sliceTypeOptions := []string{"Even", "Onsets"}
-		playthroughOptions := []string{"Sliced", "Oneshot"}
+		playthroughOptions := []string{"Sliced", "Oneshot", "Slice Bounce", "Slice Stop"}
 		syncToBPMOptions := []string{"No", "Yes"}
 
 		// Metadata settings with common rendering pattern

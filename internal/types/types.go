@@ -316,7 +316,7 @@ func GetChordNotes(root int, ctype ChordType, add ChordAddition, transpose Chord
 type FileMetadata struct {
 	BPM          float32   `json:"bpm"`          // Source BPM for the file
 	Slices       int       `json:"slices"`       // Number of slices in the file
-	Playthrough  int       `json:"playthrough"`  // 0=Sliced, 1=Oneshot
+	Playthrough  int       `json:"playthrough"`  // 0=Sliced, 1=Oneshot, 2=Slice Bounce, 3=Slice Stop
 	SyncToBPM    int       `json:"synctobpm"`    // 0=No, 1=Yes (default)
 	SliceType    int       `json:"slicetype"`    // 0=Even (default), 1=Onsets
 	Onsets       []float64 `json:"onsets"`       // Onset times in seconds (populated when SliceType=1)

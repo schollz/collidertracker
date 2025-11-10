@@ -67,14 +67,14 @@ func ModifyFileMetadataValue(m *model.Model, delta float32) {
 		)
 		modifyValueWithBounds(modifier, delta)
 
-	case types.FileMetadataRowPlaythrough: // Playthrough (0=Sliced, 1=Oneshot)
+	case types.FileMetadataRowPlaythrough: // Playthrough (0=Sliced, 1=Oneshot, 2=Slice Bounce, 3=Slice Stop)
 		modifier := createIntModifier(
 			func() int { return metadata.Playthrough },
 			func(v int) {
 				metadata.Playthrough = v
 				m.FileMetadata[m.MetadataEditingFile] = metadata
 			},
-			0, 1, fmt.Sprintf("file metadata Playthrough for %s", m.MetadataEditingFile),
+			0, 3, fmt.Sprintf("file metadata Playthrough for %s", m.MetadataEditingFile),
 		)
 		modifyValueWithBounds(modifier, delta)
 
