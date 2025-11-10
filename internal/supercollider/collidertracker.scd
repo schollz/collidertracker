@@ -591,12 +591,14 @@ Routine{
     			]);
 
 				endToggled = ToggleFF.kr(
-					((posCurFeedback > (sliceEndOriginal - 0.01)) * (posCurFeedbackLast <= (sliceEndOriginal - 0.01)))
+					((posCurFeedback > (sliceEndOriginal - 0.001)) * (posCurFeedbackLast <= (sliceEndOriginal - 0.001)))
 					+
-					((posCurFeedback < (sliceStartOriginal + 0.01)) * (posCurFeedbackLast >= (sliceStartOriginal + 0.01)))
+					((posCurFeedback < (sliceStartOriginal + 0.001)) * (posCurFeedbackLast >= (sliceStartOriginal + 0.001)))
 				);
 				// bounce if end toggled
 				rate = rate * Select.kr(endToggled * sliceBounce,[1.0,-1.0]);
+				gate = gate * Select.kr(endToggled * (1 - sliceBounce),[1,0]);
+				
 
 
     			// Change volume based on retrigger
@@ -1303,7 +1305,7 @@ Routine{
 
 		NetAddr.new("127.0.0.1", NetAddr.langPort).sendMsg(
 			"/sampler",
-			"/home/zns/Documents/collidertracker/break/49_jij.wav",
+			"/home/zns/Documents/collidertracker/beat_bpm174.wav",
 			0,
 			\trackVolume, 12.0,
 			\sliceCount, 64,
@@ -1334,7 +1336,8 @@ Routine{
 			\sliceDurationBeats, 32,
 			\sliceStart, 0,
 			\sliceEnd, 0.125,
-			\sliceBounce, 1,
+			\sliceBounce, 0,
+			\sliceStop, 1,
 		);
 
     }.play;
