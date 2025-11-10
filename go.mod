@@ -11,8 +11,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lucasb-eyer/go-colorful v1.3.0
 	github.com/muesli/termenv v0.16.0
-	github.com/schollz/audiomorph v0.2.0
-	github.com/schollz/gowaveform v0.1.0
+	github.com/schollz/audiomorph v1.0.1
+	github.com/schollz/gowaveform v0.2.0
 	github.com/schollz/onsets v0.2.0
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.10.0
@@ -36,17 +36,18 @@ require (
 	github.com/go-audio/aiff v1.1.0 // indirect
 	github.com/go-audio/audio v1.0.0 // indirect
 	github.com/go-audio/riff v1.0.0 // indirect
-	github.com/hajimehoshi/go-mp3 v0.3.0 // indirect
-	github.com/icza/bitio v1.0.0 // indirect
+	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
+	github.com/icza/bitio v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jfreymuth/oggvorbis v1.0.1 // indirect
-	github.com/jfreymuth/vorbis v1.0.0 // indirect
+	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
+	github.com/jfreymuth/vorbis v1.0.2 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
-	github.com/mewkiz/flac v1.0.7 // indirect
-	github.com/mewkiz/pkg v0.0.0-20190919212034-518ade7978e2 // indirect
+	github.com/mewkiz/flac v1.0.13 // indirect
+	github.com/mewkiz/pkg v0.0.0-20250417130911-3f050ff8c56d // indirect
+	github.com/mewpkg/term v0.0.0-20241026122259-37a80af23985 // indirect
 	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -56,7 +57,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/schollz/goflac v0.1.0 // indirect
-	github.com/schollz/govorbis v0.0.0-20251109143319-a6ba845ab65e // indirect
+	github.com/schollz/govorbis v0.0.0-20251109153616-1f3f82bece61 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sys v0.37.0 // indirect

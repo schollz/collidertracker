@@ -58,3 +58,6 @@ log
 # Waveform visualization cache files
 waveforms/
 new3
+*.wav 
+break*
+*.flac

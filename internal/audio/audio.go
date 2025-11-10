@@ -45,10 +45,9 @@ func ConvertToWaveformFile(inputPath string, projectDir string) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("failed to decode audio file: %w", err)
 	}
-	audio.Mono = true
 
 	// Encode to WAV file
-	if err := audiomorph.EncodeFile(audio, outputPath); err != nil {
+	if err := audiomorph.EncodeFile(audio, outputPath, audiomorph.OptionUseChannels([]int{0})); err != nil {
 		return "", fmt.Errorf("failed to encode WAV file: %w", err)
 	}
 
