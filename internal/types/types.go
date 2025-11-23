@@ -1102,77 +1102,77 @@ var InstrumentRegistry = map[string]InstrumentDefinition{
 		Parameters: []InstrumentParameterDef{
 			{
 				Key: "saw", DisplayName: "Saw", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 1.0, Default: 1.0, Column: 0, Order: 0,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 1.0, Column: 0, Order: 0,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "pulse", DisplayName: "Pulse", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 0, Order: 1,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 0, Order: 1,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "sub", DisplayName: "Sub", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 0, Order: 2,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 0, Order: 2,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "noise", DisplayName: "Noise", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 0, Order: 3,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 0, Order: 3,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "pwm", DisplayName: "PWM", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Default: 0.5, Column: 0, Order: 4,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Column: 0, Order: 4,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "cutoff", DisplayName: "Cutoff", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Default: 0.5, Column: 0, Order: 5,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Column: 0, Order: 5,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "resonance", DisplayName: "Resonance", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 0, Order: 6,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 0, Order: 6,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "envMod", DisplayName: "Env Mod", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 0, Order: 7,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 0, Order: 7,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "decay", DisplayName: "Decay", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Default: 0.5, Column: 1, Order: 0,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Column: 1, Order: 0,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "lfoRate", DisplayName: "LFO Rate", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Default: 0.5, Column: 1, Order: 1,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.5, Column: 1, Order: 1,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "lfoDelay", DisplayName: "LFO Delay", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 1, Order: 2,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 1, Order: 2,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "dcoLfo", DisplayName: "DCO LFO", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 1, Order: 3,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 1, Order: 3,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "vcfLfo", DisplayName: "VCF LFO", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 1, Order: 4,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 1, Order: 4,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{
 				Key: "chorus", DisplayName: "Chorus", Type: ParameterTypeInt,
-				MinValue: 0, MaxValue: 4, DefaultValue: 0, Default: 0, Column: 1, Order: 5,
+				MinValue: 0, MaxValue: 4, DefaultValue: 0, Column: 1, Order: 5,
 				DisplayFormatter: FormatChorusMode,
 			},
 			{
 				Key: "hpf", DisplayName: "HPF", Type: ParameterTypeFloat,
-				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Default: 0.0, Column: 1, Order: 6,
+				MinValue: 0.0, MaxValue: 1.0, DefaultValue: 0.0, Column: 1, Order: 6,
 				CoarseStep: 0.1, FineStep: 0.01, DisplayFormat: "%.2f",
 			},
 			{

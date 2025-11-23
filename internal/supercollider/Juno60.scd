@@ -105,8 +105,10 @@ mainCaller = { arg set, k, v, synBefore, note, vel, pan,
 			NodeWatcher.register(noteArrayJuno60[note]);
 		}, {
 			// Note off
-			noteArrayJuno60[note].set(\gate, 0);
-			noteArrayJuno60[note] = nil;
+			if (noteArrayJuno60[note].notNil, {
+				noteArrayJuno60[note].set(\gate, 0);
+				noteArrayJuno60[note] = nil;
+			});
 		});
 	});
 };
