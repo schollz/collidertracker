@@ -607,6 +607,88 @@ Routine{
     		Out.ar(\effectReverbOut.kr(0), signal*\effectReverb.kr(0));
     	}).add;
 
+    	SynthDef("Juno60",{
+    		arg gate = 1, note = 60, amp = 1.0,
+    		attack = 0.1, decay = 0.5, sustain = 0.5, release = 0.5,
+    		cutoff = 0.5, resonance = 0.0, envMod = 0.0,
+    		saw = 1, pulse = 0.0, sub = 0.0, noise = 0.0, pwm = 0.5,
+    		chorus = 0, chorusDrywet = 1.0,
+    		lfoRate = 0.5, lfoDelay = 0.0, lfoAuto = 0,
+    		dcoLfo = 0.0, dcoPwmMod = 0, dcoRange = 1.0,
+    		hpf = 0.0, vcfLfo = 0.0, vcfKey = 1.0, vcfDir = 1.0,
+    		vcaType = 0.0, vcaValue = 0.5,
+    		pan = 0, duration = 1.0,
+    		trackVolume = 0,
+    		effectDryOut, effectCombOut, effectReverbOut,
+    		effectReverb = 0.0, effectComb = 0.0,
+    		trackOut;
+    		var snd, env, ducked;
+
+    		snd = Juno60.ar(
+    			gate: gate,
+    			note: note,
+    			amp: amp,
+    			attack: attack,
+    			decay: decay,
+    			sustain: sustain,
+    			release: release,
+    			cutoff: cutoff,
+    			resonance: resonance,
+    			envMod: envMod,
+    			saw: saw,
+    			pulse: pulse,
+    			sub: sub,
+    			noise: noise,
+    			pwm: pwm,
+    			chorus: chorus,
+    			chorusDrywet: chorusDrywet,
+    			lfoRate: lfoRate,
+    			lfoDelay: lfoDelay,
+    			lfoAuto: lfoAuto,
+    			dcoLfo: dcoLfo,
+    			dcoPwmMod: dcoPwmMod,
+    			dcoRange: dcoRange,
+    			hpf: hpf,
+    			vcfLfo: vcfLfo,
+    			vcfKey: vcfKey,
+    			vcfDir: vcfDir,
+    			vcaType: vcaType,
+    			vcaValue: vcaValue,
+    			doneAction: 0
+    		);
+
+    		env = EnvGen.ar(Env.adsr(0.01, 0.0, 1.0, 0.1), 1-EnvGen.kr(Env.new([0,0,1], [duration,0])), doneAction:2);
+    		snd = snd * env * trackVolume.dbamp;
+    		snd = Balance2.ar(snd[0], snd[1], pan);
+
+    		// check if signal is ducked
+    		ducked = Compander.ar(
+    			in:         snd,
+    			control:    LeakDC.ar(In.ar(\duckingBusIn.kr(0), 1)),
+    			thresh:     \duckingThresh.kr(0.02),
+    			slopeBelow: 1,
+    			slopeAbove: (1 - \duckingDepth.kr(0).clip(0, 0.99)).max(0.01),
+    			clampTime:  \duckingAttack.kr(0.02),
+    			relaxTime:  \duckingRelease.kr(0.20)
+    		);
+    		snd = Select.ar(\duckingType.kr(0),
+    			[snd, snd, ducked]
+    		);
+    		snd = snd + (1e-6 * WhiteNoise.ar(1));
+    		Out.ar(\duckingBusOut.kr(0),
+    			Mix(snd) * \duckingDepth.kr(0).clip(0, 0.99) * Select.kr(\duckingType.kr(0), [
+    				0,
+    				1,
+    				0
+    			])
+    		);
+
+    		Out.ar(trackOut, snd*(1.0 - effectReverb));
+    		Out.ar(effectDryOut, snd*(1.0 - effectReverb));
+    		Out.ar(effectCombOut, snd*effectComb);
+    		Out.ar(effectReverbOut, snd*effectReverb);
+    	}).add;
+
     	SynthDef("externalInput", {
     		arg trackId,
     		trackVolume = 0,
@@ -1063,6 +1145,10 @@ Routine{
     		PathName(thisProcess.nowExecutingPath).pathOnly +/+ "DX7.scd"
     	);
     	s.sync;
+    	~juno60syn = thisProcess.interpreter.executeFile(
+    		PathName(thisProcess.nowExecutingPath).pathOnly +/+ "Juno60.scd"
+    	);
+    	s.sync;
     	~sampleCache = Dictionary.new();
 
 
@@ -1355,6 +1441,137 @@ Routine{
     			~playSynthFromMsg.(msg);
     		});
     	},'/instrument');
+
+    	OSCFunc({ |msg|
+    		var synthToPlay = msg[3].asString;
+    		if (synthToPlay=="Juno60",{
+    			var settings = Dictionary.new();
+    			var notes = Array.new();
+    			var nonNoteIndex = 4;
+    			var trackId = msg[1].asInteger;
+    			var keepSearching = true;
+    			// find where msg[4:] is not a float
+    			msg[4..].do({ |v,i|
+    				if (v.isNumber && keepSearching,{
+    					notes = notes.add(v);
+    					nonNoteIndex = i + 5;
+    				},{
+    					// break out of do loop
+    					keepSearching = false;
+    				});
+    			});
+
+    			settings.put("set",0);
+    			settings.put("k","");
+    			settings.put("v",0);
+    			settings.put("synBefore",~synOut);
+    			settings.put("note",60);
+    			settings.put("vel",100);
+    			settings.put("pan",0);
+    			settings.put("attack",0.1);
+    			settings.put("release",0.5);
+    			settings.put("duration",1.0);
+    			settings.put("trackVolume",-24.0);
+    			settings.put("filter",20000);
+    			settings.put("effectDryOut", ~busDry);
+    			settings.put("effectCombOut", ~busComb);
+    			settings.put("effectReverbOut", ~busReverb);
+    			settings.put("trackOut", ~busTrack[trackId]);
+    			settings.put("effectReverb",0.0);
+    			settings.put("effectComb",0.0);
+    			
+    			// Juno-60 specific defaults
+    			settings.put("amp", 1.0);
+    			settings.put("decay", 0.5);
+    			settings.put("sustain", 0.5);
+    			settings.put("cutoff", 0.5);
+    			settings.put("resonance", 0.0);
+    			settings.put("envMod", 0.0);
+    			settings.put("saw", 1);
+    			settings.put("pulse", 0.0);
+    			settings.put("sub", 0.0);
+    			settings.put("noise", 0.0);
+    			settings.put("pwm", 0.5);
+    			settings.put("chorus", 0);
+    			settings.put("chorusDrywet", 1.0);
+    			settings.put("lfoRate", 0.5);
+    			settings.put("lfoDelay", 0.0);
+    			settings.put("lfoAuto", 0);
+    			settings.put("dcoLfo", 0.0);
+    			settings.put("dcoPwmMod", 0);
+    			settings.put("dcoRange", 1.0);
+    			settings.put("hpf", 0.0);
+    			settings.put("vcfLfo", 0.0);
+    			settings.put("vcfKey", 1.0);
+    			settings.put("vcfDir", 1.0);
+    			settings.put("vcaType", 0.0);
+    			settings.put("vcaValue", 0.5);
+
+    			// for all other messages, they are key/value pairs
+    			msg[nonNoteIndex..].do({ |v,i|
+    				if (i.mod(2) == 1,{
+    					settings.put(msg[nonNoteIndex + i - 1].asString,v);
+    				});
+    			});
+    			
+    			// normalize velocity (0-127) and add to track volume
+    			if (settings.at("velocity").notNil,{
+    				settings.put("trackVolume", settings.at("trackVolume") + settings.at("velocity").min(127).max(0).linlin(0,127,-24,24));
+    			});
+    			
+    			["playing Juno60"].postln;
+    			notes.do({ |n|
+    				settings.put("note",n);
+    				["note",n].postln;
+    				~juno60syn.value(
+    					settings.at("set"),
+    					settings.at("k"),
+    					settings.at("v"),
+    					settings.at("synBefore"),
+    					settings.at("note"),
+    					settings.at("vel"),
+    					settings.at("pan"),
+    					settings.at("attack"),
+    					settings.at("release"),
+    					settings.at("duration"),
+    					settings.at("trackVolume"),
+    					settings.at("filter"),
+    					settings.at("effectDryOut"),
+    					settings.at("effectCombOut"),
+    					settings.at("effectReverbOut"),
+    					settings.at("effectReverb"),
+    					settings.at("effectComb"),
+    					settings.at("trackOut"),
+    					// Juno-60 specific parameters
+    					settings.at("amp"),
+    					settings.at("decay"),
+    					settings.at("sustain"),
+    					settings.at("cutoff"),
+    					settings.at("resonance"),
+    					settings.at("envMod"),
+    					settings.at("saw"),
+    					settings.at("pulse"),
+    					settings.at("sub"),
+    					settings.at("noise"),
+    					settings.at("pwm"),
+    					settings.at("chorus"),
+    					settings.at("chorusDrywet"),
+    					settings.at("lfoRate"),
+    					settings.at("lfoDelay"),
+    					settings.at("lfoAuto"),
+    					settings.at("dcoLfo"),
+    					settings.at("dcoPwmMod"),
+    					settings.at("dcoRange"),
+    					settings.at("hpf"),
+    					settings.at("vcfLfo"),
+    					settings.at("vcfKey"),
+    					settings.at("vcfDir"),
+    					settings.at("vcaType"),
+    					settings.at("vcaValue")
+    				);
+    			});
+    		});
+    	},'/juno60');
 
     	OSCFunc({ |msg|
     		// stop all currently playing synths in all tracks
