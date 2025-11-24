@@ -66,12 +66,17 @@ func TestTimingDriftLongDuration(t *testing.T) {
 	tolerance := 100 * time.Millisecond           // Allow 100ms tolerance even after 1 hour
 	
 	for _, tickNum := range checkPoints {
-		// Calculate expected time for this tick
-		expectedTime := m.PlaybackStartTime.Add(time.Duration(tickNum) * expectedTickDuration)
+		// Calculate expected absolute time for this tick using absolute scheduling
+		us := rowDurationMicroseconds(m)
+		expectedTime := m.PlaybackStartTime.Add(time.Duration(float64(tickNum) * us * 1000))
 		
-		// Calculate what the next tick time would be with absolute scheduling
-		nextTickTime := m.PlaybackStartTime.Add(time.Duration(tickNum) * expectedTickDuration)
-		drift := nextTickTime.Sub(expectedTime)
+		// Calculate what the expected time would be using simple multiplication
+		// This represents the "ideal" time if there was no drift
+		idealTime := m.PlaybackStartTime.Add(time.Duration(tickNum) * expectedTickDuration)
+		
+		// The drift is the difference between these two
+		// With proper tick duration calculation, these should be identical
+		drift := expectedTime.Sub(idealTime)
 		
 		assert.Less(t, drift.Abs(), tolerance,
 			"After %d ticks (%.1f minutes): drift %v exceeds tolerance %v",
@@ -125,7 +130,7 @@ func TestRowDurationCalculation(t *testing.T) {
 	}
 }
 
-// BenchmarkTimingAccuracy measures the actual drift that would occur over many ticks
+// BenchmarkTimingAccuracy measures the performance of timing calculations
 func BenchmarkTimingAccuracy(b *testing.B) {
 	m := model.NewModel(0, "", false)
 	m.BPM = 120.0 // 2 beats per second
@@ -134,7 +139,7 @@ func BenchmarkTimingAccuracy(b *testing.B) {
 	m.PlaybackStartTime = time.Now()
 	m.PlaybackTickCount = 0
 	
-	// Simulate a high number of ticks
+	// Measure the performance of calculating tick times
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		m.PlaybackTickCount++

@@ -9,6 +9,11 @@ import (
 	"github.com/schollz/collidertracker/internal/types"
 )
 
+const (
+	// nanosecondsPerMicrosecond is the conversion factor from microseconds to nanoseconds
+	nanosecondsPerMicrosecond = 1000
+)
+
 func TogglePlayback(m *model.Model) tea.Cmd {
 	// If currently playing and trying to start playback from a different context, stop first
 	if m.IsPlaying {
@@ -408,7 +413,7 @@ func Tick(m *model.Model) tea.Cmd {
 	
 	// Calculate the absolute time when the next tick should occur
 	// This prevents drift accumulation by always scheduling relative to start time
-	nextTickTime := m.PlaybackStartTime.Add(time.Duration(float64(m.PlaybackTickCount) * us * 1000))
+	nextTickTime := m.PlaybackStartTime.Add(time.Duration(float64(m.PlaybackTickCount) * us * nanosecondsPerMicrosecond))
 	now := time.Now()
 	
 	// Calculate how long to wait until the next tick
@@ -427,7 +432,7 @@ func Tick(m *model.Model) tea.Cmd {
 	// Log timing information periodically (every 60 ticks for debugging)
 	if m.PlaybackTickCount%60 == 0 {
 		elapsed := now.Sub(m.PlaybackStartTime)
-		expectedElapsed := time.Duration(float64(m.PlaybackTickCount) * us * 1000)
+		expectedElapsed := time.Duration(float64(m.PlaybackTickCount) * us * nanosecondsPerMicrosecond)
 		drift := elapsed - expectedElapsed
 		log.Printf("TIMING: Tick %d - Elapsed: %v, Expected: %v, Drift: %v",
 			m.PlaybackTickCount, elapsed, expectedElapsed, drift)
