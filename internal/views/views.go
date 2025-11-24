@@ -332,31 +332,31 @@ func buildNavigationChain(m *model.Model, highlightStyle, dimStyle lipgloss.Styl
 		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("D")
 		
 	case types.SettingsView:
-		// Settings view: Show S-C-P with appropriate letter highlighted, then O
+		// Settings view: Show S-C-P with appropriate letter highlighted from PreviousView
 		switch m.PreviousView {
 		case types.SongView:
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("O")
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
 		case types.ChainView:
-			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P-") + highlightStyle.Render("O")
+			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P")
 		case types.PhraseView:
-			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P") + dimStyle.Render("-") + highlightStyle.Render("O")
+			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P")
 		default:
 			// Default to S highlighted
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("O")
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
 		}
 		
 	case types.MixerView:
-		// Mixer view: Show S-C-P with appropriate letter highlighted, then M
+		// Mixer view: Show S-C-P with appropriate letter highlighted from PreviousView
 		switch m.PreviousView {
 		case types.SongView:
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("M")
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
 		case types.ChainView:
-			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P-") + highlightStyle.Render("M")
+			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P")
 		case types.PhraseView:
-			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P") + dimStyle.Render("-") + highlightStyle.Render("M")
+			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P")
 		default:
 			// Default to S highlighted
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("M")
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
 		}
 		
 	case types.FileMetadataView:
