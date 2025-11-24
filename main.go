@@ -202,6 +202,13 @@ func restartWithProject() {
 				if err := supercollider.StartSuperColliderWithRecording(config.record); err != nil {
 					log.Printf("Failed to start SuperCollider: %v", err)
 				}
+				// Wait a moment for SuperCollider to output its port information
+				time.Sleep(2 * time.Second)
+				// Check if SuperCollider detected a different port
+				if detectedPort := supercollider.GetDetectedPort(); detectedPort > 0 && detectedPort != config.port {
+					log.Printf("SuperCollider started on port %d (expected %d), updating OSC configuration", detectedPort, config.port)
+					tm.model.UpdateOSCPort(detectedPort)
+				}
 				return
 			}
 
@@ -220,6 +227,13 @@ func restartWithProject() {
 				log.Printf("sclang running but no ColliderTracker detected, starting new instance")
 				if err := supercollider.StartSuperColliderWithRecording(config.record); err != nil {
 					log.Printf("Failed to start SuperCollider: %v", err)
+				}
+				// Wait a moment for SuperCollider to output its port information
+				time.Sleep(2 * time.Second)
+				// Check if SuperCollider detected a different port
+				if detectedPort := supercollider.GetDetectedPort(); detectedPort > 0 && detectedPort != config.port {
+					log.Printf("SuperCollider started on port %d (expected %d), updating OSC configuration", detectedPort, config.port)
+					tm.model.UpdateOSCPort(detectedPort)
 				}
 			}
 		}()
@@ -443,6 +457,13 @@ func runColliderTracker(cmd *cobra.Command, args []string) {
 				if err := supercollider.StartSuperColliderWithRecording(config.record); err != nil {
 					log.Printf("Failed to start SuperCollider: %v", err)
 				}
+				// Wait a moment for SuperCollider to output its port information
+				time.Sleep(2 * time.Second)
+				// Check if SuperCollider detected a different port
+				if detectedPort := supercollider.GetDetectedPort(); detectedPort > 0 && detectedPort != config.port {
+					log.Printf("SuperCollider started on port %d (expected %d), updating OSC configuration", detectedPort, config.port)
+					tm.model.UpdateOSCPort(detectedPort)
+				}
 				return
 			}
 
@@ -461,6 +482,13 @@ func runColliderTracker(cmd *cobra.Command, args []string) {
 				log.Printf("sclang running but no ColliderTracker detected, starting new instance")
 				if err := supercollider.StartSuperColliderWithRecording(config.record); err != nil {
 					log.Printf("Failed to start SuperCollider: %v", err)
+				}
+				// Wait a moment for SuperCollider to output its port information
+				time.Sleep(2 * time.Second)
+				// Check if SuperCollider detected a different port
+				if detectedPort := supercollider.GetDetectedPort(); detectedPort > 0 && detectedPort != config.port {
+					log.Printf("SuperCollider started on port %d (expected %d), updating OSC configuration", detectedPort, config.port)
+					tm.model.UpdateOSCPort(detectedPort)
 				}
 			}
 		}()

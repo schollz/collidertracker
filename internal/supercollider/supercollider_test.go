@@ -289,3 +289,106 @@ func TestGetSynthDefNames(t *testing.T) {
 		assert.NotEmpty(t, result)
 	})
 }
+
+func TestPortDetectingWriter(t *testing.T) {
+	// Reset detected port before each test
+	ResetDetectedPort()
+
+	t.Run("detects port from 'trying port' message", func(t *testing.T) {
+		ResetDetectedPort()
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		
+		message := "Cannot bind to UDP port 57120, trying port 57121\n"
+		_, err := writer.Write([]byte(message))
+		
+		assert.NoError(t, err)
+		assert.Equal(t, 57121, GetDetectedPort())
+	})
+
+	t.Run("detects port from 'using port' message", func(t *testing.T) {
+		ResetDetectedPort()
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		
+		message := "Server using port 57122\n"
+		_, err := writer.Write([]byte(message))
+		
+		assert.NoError(t, err)
+		assert.Equal(t, 57122, GetDetectedPort())
+	})
+
+	t.Run("detects port from 'address' message", func(t *testing.T) {
+		ResetDetectedPort()
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		
+		message := "Starting server 'localhost' on address 127.0.0.1:57123\n"
+		_, err := writer.Write([]byte(message))
+		
+		assert.NoError(t, err)
+		assert.Equal(t, 57123, GetDetectedPort())
+	})
+
+	t.Run("detects port from 'booting' message", func(t *testing.T) {
+		ResetDetectedPort()
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		
+		message := "booting 57124\n"
+		_, err := writer.Write([]byte(message))
+		
+		assert.NoError(t, err)
+		assert.Equal(t, 57124, GetDetectedPort())
+	})
+
+	t.Run("does not detect port from non-matching message", func(t *testing.T) {
+		ResetDetectedPort()
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		
+		message := "Some random SuperCollider output\n"
+		_, err := writer.Write([]byte(message))
+		
+		assert.NoError(t, err)
+		assert.Equal(t, 0, GetDetectedPort())
+	})
+
+	t.Run("updates to latest detected port", func(t *testing.T) {
+		ResetDetectedPort()
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		
+		// First port
+		message1 := "trying port 57121\n"
+		writer.Write([]byte(message1))
+		assert.Equal(t, 57121, GetDetectedPort())
+		
+		// Second port overwrites
+		message2 := "trying port 57122\n"
+		writer.Write([]byte(message2))
+		assert.Equal(t, 57122, GetDetectedPort())
+	})
+}
+
+func TestGetDetectedPort(t *testing.T) {
+	t.Run("returns zero when no port detected", func(t *testing.T) {
+		ResetDetectedPort()
+		assert.Equal(t, 0, GetDetectedPort())
+	})
+
+	t.Run("returns detected port after parsing", func(t *testing.T) {
+		ResetDetectedPort()
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		writer.Write([]byte("trying port 57125\n"))
+		
+		assert.Equal(t, 57125, GetDetectedPort())
+	})
+}
+
+func TestResetDetectedPort(t *testing.T) {
+	t.Run("resets port to zero", func(t *testing.T) {
+		// Set a port
+		writer := &portDetectingWriter{logWriter: os.Stderr}
+		writer.Write([]byte("trying port 57126\n"))
+		assert.Equal(t, 57126, GetDetectedPort())
+		
+		// Reset
+		ResetDetectedPort()
+		assert.Equal(t, 0, GetDetectedPort())
+	})
+}

@@ -820,6 +820,17 @@ func NewModel(oscPort int, saveFolder string, vimMode bool) *Model {
 	return m
 }
 
+// UpdateOSCPort updates the OSC client to use a new port
+// This is useful when SuperCollider starts on a different port than expected
+func (m *Model) UpdateOSCPort(newPort int) {
+	if newPort > 0 && newPort != m.oscPort {
+		log.Printf("Updating OSC client from port %d to %d", m.oscPort, newPort)
+		m.oscPort = newPort
+		m.oscClient = osc.NewClient("localhost", newPort)
+		log.Printf("OSC client updated to localhost:%d", newPort)
+	}
+}
+
 func (m *Model) initializeDefaultData() {
 	// Initialize chains data (255 chains, each with chain_number and phrase_number)
 	m.ChainsData = make([][]int, 255)
