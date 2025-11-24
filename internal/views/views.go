@@ -203,16 +203,36 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 		highlightPosition = 4 // P is at position 4 (S-C-P)
 		
 	case types.SettingsView:
-		// Settings (Options) view: O is current, show S-C-P above it with M below
-		topLabel = "S-C-P" // Show full navigation path above
+		// Settings (Options) view: O is current, align with where we came from
+		// Determine position based on PreviousView
+		switch m.PreviousView {
+		case types.SongView:
+			highlightPosition = 0 // S is at position 0
+		case types.ChainView:
+			highlightPosition = 2 // C is at position 2 (S-C)
+		case types.PhraseView:
+			highlightPosition = 4 // P is at position 4 (S-C-P)
+		default:
+			highlightPosition = 0 // Default to S position
+		}
+		topLabel = "" // No label above (we're at Options)
 		bottomLabel = "M"
-		highlightPosition = 0 // O will be on line 2, position 0
 		
 	case types.MixerView:
-		// Mixer view: M is current, show S-C-P and O above it
-		topLabel = "S-C-P" // Show full navigation path
-		bottomLabel = ""
-		highlightPosition = 0 // M will be on line 2, position 0
+		// Mixer view: M is current, align with where we came from
+		// Determine position based on PreviousView
+		switch m.PreviousView {
+		case types.SongView:
+			highlightPosition = 0 // S is at position 0
+		case types.ChainView:
+			highlightPosition = 2 // C is at position 2 (S-C)
+		case types.PhraseView:
+			highlightPosition = 4 // P is at position 4 (S-C-P)
+		default:
+			highlightPosition = 0 // Default to S position
+		}
+		topLabel = "O"
+		bottomLabel = "" // No label below (we're at Mixer)
 		
 	case types.FileView:
 		// File browser: D above F
@@ -312,12 +332,32 @@ func buildNavigationChain(m *model.Model, highlightStyle, dimStyle lipgloss.Styl
 		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("D")
 		
 	case types.SettingsView:
-		// Settings view: O highlighted (S-C-P shown on line above)
-		chain = highlightStyle.Render("O")
+		// Settings view: Show S-C-P with appropriate letter highlighted, then O
+		switch m.PreviousView {
+		case types.SongView:
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("O")
+		case types.ChainView:
+			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P-") + highlightStyle.Render("O")
+		case types.PhraseView:
+			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P") + dimStyle.Render("-") + highlightStyle.Render("O")
+		default:
+			// Default to S highlighted
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("O")
+		}
 		
 	case types.MixerView:
-		// Mixer view: M highlighted (S-C-P shown on line above)
-		chain = highlightStyle.Render("M")
+		// Mixer view: Show S-C-P with appropriate letter highlighted, then M
+		switch m.PreviousView {
+		case types.SongView:
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("M")
+		case types.ChainView:
+			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P-") + highlightStyle.Render("M")
+		case types.PhraseView:
+			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P") + dimStyle.Render("-") + highlightStyle.Render("M")
+		default:
+			// Default to S highlighted
+			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P-") + highlightStyle.Render("M")
+		}
 		
 	case types.FileMetadataView:
 		// S-C-P-F-D with D highlighted (File Metadata from File browser)
