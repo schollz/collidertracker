@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,7 +36,14 @@ var (
 	tempDX7SCDFile  = ""
 	sclangProcess   *exec.Cmd
 	cleanupCalled   = false
-	detectedPort    = 0 // Port detected from SuperCollider output, 0 means not detected yet
+	detectedPort    = int32(0) // Port detected from SuperCollider output, 0 means not detected yet (atomic access)
+)
+
+// Pre-compiled regex patterns for port detection (compiled once for performance)
+var (
+	portPatternTryingUsing = regexp.MustCompile(`(?i)(?:trying|using)\s+port\s+(\d+)`)
+	portPatternAddress     = regexp.MustCompile(`(?:address|on)\s+[\d.]+:(\d+)`)
+	portPatternBooting     = regexp.MustCompile(`(?i)booting\s+(\d+)`)
 )
 
 // portDetectingWriter is an io.Writer that monitors SuperCollider's output
@@ -57,28 +65,25 @@ func (w *portDetectingWriter) Write(p []byte) (n int, err error) {
 	line := string(p)
 	
 	// Pattern 1: "trying port XXXXX" or "using port XXXXX"
-	re1 := regexp.MustCompile(`(?i)(?:trying|using)\s+port\s+(\d+)`)
-	if matches := re1.FindStringSubmatch(line); len(matches) > 1 {
+	if matches := portPatternTryingUsing.FindStringSubmatch(line); len(matches) > 1 {
 		if port, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
-			detectedPort = port
+			atomic.StoreInt32(&detectedPort, int32(port))
 			log.Printf("Detected SuperCollider using port %d from output: %s", port, strings.TrimSpace(line))
 		}
 	}
 	
 	// Pattern 2: "address 127.0.0.1:XXXXX" or similar IP:port patterns
-	re2 := regexp.MustCompile(`(?:address|on)\s+[\d.]+:(\d+)`)
-	if matches := re2.FindStringSubmatch(line); len(matches) > 1 {
+	if matches := portPatternAddress.FindStringSubmatch(line); len(matches) > 1 {
 		if port, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
-			detectedPort = port
+			atomic.StoreInt32(&detectedPort, int32(port))
 			log.Printf("Detected SuperCollider using port %d from output: %s", port, strings.TrimSpace(line))
 		}
 	}
 	
 	// Pattern 3: "booting XXXXX"
-	re3 := regexp.MustCompile(`(?i)booting\s+(\d+)`)
-	if matches := re3.FindStringSubmatch(line); len(matches) > 1 {
+	if matches := portPatternBooting.FindStringSubmatch(line); len(matches) > 1 {
 		if port, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
-			detectedPort = port
+			atomic.StoreInt32(&detectedPort, int32(port))
 			log.Printf("Detected SuperCollider using port %d from output: %s", port, strings.TrimSpace(line))
 		}
 	}
@@ -243,13 +248,15 @@ func StartSuperColliderWithProgress(readyChannel <-chan struct{}) error {
 
 // GetDetectedPort returns the port that SuperCollider actually started on.
 // Returns 0 if no port has been detected yet.
+// Thread-safe via atomic operations.
 func GetDetectedPort() int {
-	return detectedPort
+	return int(atomic.LoadInt32(&detectedPort))
 }
 
 // ResetDetectedPort resets the detected port (useful for testing or restarting)
+// Thread-safe via atomic operations.
 func ResetDetectedPort() {
-	detectedPort = 0
+	atomic.StoreInt32(&detectedPort, 0)
 }
 
 func Cleanup() {
@@ -282,7 +289,7 @@ func Cleanup() {
 	}
 
 	// Reset detected port
-	detectedPort = 0
+	atomic.StoreInt32(&detectedPort, 0)
 
 	// Remove temporary files if we created them
 	if tempSamplerFile != "" {
