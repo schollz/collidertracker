@@ -395,6 +395,11 @@ func HasRequiredExtensions() bool {
 		return false
 	}
 
+	// Also check for Juno60
+	if !hasJuno60() {
+		return false
+	}
+
 	return true
 }
 
@@ -542,6 +547,30 @@ func DownloadRequiredExtensions() error {
 		fmt.Println("Open303 downloaded successfully")
 	}
 
+	// Check for Juno60
+	if !hasJuno60() {
+		fmt.Println("Downloading Juno60...")
+		downloadURL := getJuno60URL()
+		if downloadURL == "" {
+			return fmt.Errorf("unsupported platform for Juno60: %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
+
+		juno60Dir := getJuno60InstallDir()
+		if juno60Dir == "" {
+			return fmt.Errorf("could not determine Juno60 installation directory")
+		}
+
+		// Create Juno60 directory if it doesn't exist
+		if err := os.MkdirAll(juno60Dir, 0755); err != nil {
+			return fmt.Errorf("failed to create Juno60 directory: %v", err)
+		}
+
+		if err := downloadAndExtractJuno60(downloadURL, juno60Dir); err != nil {
+			return fmt.Errorf("failed to download Juno60: %v", err)
+		}
+		fmt.Println("Juno60 downloaded successfully")
+	}
+
 	if HasRequiredExtensions() {
 		fmt.Println("All required extensions are now available")
 		return nil
@@ -602,6 +631,28 @@ func getOpen303URL() string {
 	return ""
 }
 
+func getJuno60URL() string {
+	// Using the latest release from https://github.com/schollz/juno-60
+	const baseURL = "https://github.com/schollz/juno-60/releases/latest/download/"
+
+	switch runtime.GOOS {
+	case "linux":
+		if runtime.GOARCH == "arm64" {
+			return baseURL + "Juno60-Linux-arm64.zip"
+		}
+		return baseURL + "Juno60-Linux-x64.zip"
+	case "darwin":
+		if runtime.GOARCH == "arm64" {
+			return baseURL + "Juno60-macOS-arm64.zip"
+		}
+		// x64 macOS - use arm64 as it will work via Rosetta
+		return baseURL + "Juno60-macOS-arm64.zip"
+	case "windows":
+		return baseURL + "Juno60-Windows-x64.zip"
+	}
+	return ""
+}
+
 func getOpen303InstallDir() string {
 	switch runtime.GOOS {
 	case "darwin":
@@ -615,6 +666,24 @@ func getOpen303InstallDir() string {
 	case "windows":
 		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
 			return filepath.Join(localAppData, "SuperCollider/Extensions/Open303")
+		}
+	}
+	return ""
+}
+
+func getJuno60InstallDir() string {
+	switch runtime.GOOS {
+	case "darwin":
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(homeDir, "Library/Application Support/SuperCollider/Extensions/Juno60")
+		}
+	case "linux":
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(homeDir, ".local/share/SuperCollider/Extensions/Juno60")
+		}
+	case "windows":
+		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+			return filepath.Join(localAppData, "SuperCollider/Extensions/Juno60")
 		}
 	}
 	return ""
@@ -642,6 +711,41 @@ func hasOpen303() bool {
 				return nil
 			}
 			if !info.IsDir() && info.Name() == "Open303.sc" {
+				found = true
+				return filepath.SkipDir
+			}
+			return nil
+		})
+
+		if found {
+			return true
+		}
+	}
+	return false
+}
+
+func hasJuno60() bool {
+	installDir := getJuno60InstallDir()
+	if installDir == "" {
+		return false
+	}
+
+	// Check for Juno60.sc file recursively in the Extensions directory
+	extensionDirs := getSuperColliderExtensionDirs()
+
+	for _, dir := range extensionDirs {
+		// Check direct file path
+		if fileExists(filepath.Join(dir, "Juno60.sc")) {
+			return true
+		}
+
+		// Check in subdirectories recursively
+		found := false
+		filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if !info.IsDir() && info.Name() == "Juno60.sc" {
 				found = true
 				return filepath.SkipDir
 			}
@@ -789,6 +893,45 @@ func downloadAndExtractOpen303(url, destDir string) error {
 
 	// Extract zip file and set executable permissions
 	if err := extractZipWithExecutable(tmpFile.Name(), destDir, "Open303"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// downloadAndExtractJuno60 downloads and extracts Juno60, similar to downloadAndExtractOpen303
+// but with special handling to set executable permissions on the binary
+func downloadAndExtractJuno60(url, destDir string) error {
+	// Download the file
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("failed to download %s: %v", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download %s: status %d", url, resp.StatusCode)
+	}
+
+	// Create temporary file
+	tmpFile, err := os.CreateTemp("", "juno60-*.zip")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	// Copy response body to temp file
+	_, err = io.Copy(tmpFile, resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to save downloaded file: %v", err)
+	}
+
+	// Close temp file before reading
+	tmpFile.Close()
+
+	// Extract zip file and set executable permissions
+	if err := extractZipWithExecutable(tmpFile.Name(), destDir, "Juno60"); err != nil {
 		return err
 	}
 
