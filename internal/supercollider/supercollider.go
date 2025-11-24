@@ -52,6 +52,18 @@ type portDetectingWriter struct {
 	logWriter io.Writer
 }
 
+// tryExtractPort attempts to extract a port number from the given matches and stores it atomically
+func tryExtractPort(matches []string, line string) bool {
+	if len(matches) > 1 {
+		if port, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
+			atomic.StoreInt32(&detectedPort, int32(port))
+			log.Printf("Detected SuperCollider using port %d from output: %s", port, strings.TrimSpace(line))
+			return true
+		}
+	}
+	return false
+}
+
 // Write implements io.Writer and scans each line for port information
 func (w *portDetectingWriter) Write(p []byte) (n int, err error) {
 	// First write to the log
@@ -64,28 +76,20 @@ func (w *portDetectingWriter) Write(p []byte) (n int, err error) {
 	// "booting 57121"
 	line := string(p)
 	
+	// Try each pattern until one matches, then return early
 	// Pattern 1: "trying port XXXXX" or "using port XXXXX"
-	if matches := portPatternTryingUsing.FindStringSubmatch(line); len(matches) > 1 {
-		if port, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
-			atomic.StoreInt32(&detectedPort, int32(port))
-			log.Printf("Detected SuperCollider using port %d from output: %s", port, strings.TrimSpace(line))
-		}
+	if matches := portPatternTryingUsing.FindStringSubmatch(line); tryExtractPort(matches, line) {
+		return n, err
 	}
 	
 	// Pattern 2: "address 127.0.0.1:XXXXX" or similar IP:port patterns
-	if matches := portPatternAddress.FindStringSubmatch(line); len(matches) > 1 {
-		if port, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
-			atomic.StoreInt32(&detectedPort, int32(port))
-			log.Printf("Detected SuperCollider using port %d from output: %s", port, strings.TrimSpace(line))
-		}
+	if matches := portPatternAddress.FindStringSubmatch(line); tryExtractPort(matches, line) {
+		return n, err
 	}
 	
 	// Pattern 3: "booting XXXXX"
-	if matches := portPatternBooting.FindStringSubmatch(line); len(matches) > 1 {
-		if port, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
-			atomic.StoreInt32(&detectedPort, int32(port))
-			log.Printf("Detected SuperCollider using port %d from output: %s", port, strings.TrimSpace(line))
-		}
+	if matches := portPatternBooting.FindStringSubmatch(line); tryExtractPort(matches, line) {
+		return n, err
 	}
 	
 	return n, err
@@ -289,7 +293,7 @@ func Cleanup() {
 	}
 
 	// Reset detected port
-	atomic.StoreInt32(&detectedPort, 0)
+	ResetDetectedPort()
 
 	// Remove temporary files if we created them
 	if tempSamplerFile != "" {

@@ -83,6 +83,19 @@ func main() {
 	}
 }
 
+
+// checkAndUpdatePortIfNeeded checks if SuperCollider detected a different port
+// and updates the OSC client if necessary
+func checkAndUpdatePortIfNeeded(tm *TrackerModel) {
+// Wait a moment for SuperCollider to output its port information
+time.Sleep(2 * time.Second)
+// Check if SuperCollider detected a different port
+if detectedPort := supercollider.GetDetectedPort(); detectedPort > 0 && detectedPort != config.port {
+log.Printf("SuperCollider started on port %d (expected %d), updating OSC configuration", detectedPort, config.port)
+tm.model.UpdateOSCPort(detectedPort)
+}
+}
+
 func restartWithProject() {
 	// This function restarts the ColliderTracker with the new project
 	// without going through cobra command parsing again
