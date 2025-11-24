@@ -234,6 +234,14 @@ func getCurrentViewIndicator(viewMode types.ViewMode) string {
 	return s + "-" + c + "-" + p
 }
 
+// calculateSpacingForHelpText calculates the spacing needed between indicator and help text
+func calculateSpacingForHelpText(indicatorLength, minSpacing int) int {
+	if indicatorLength < minSpacing {
+		return minSpacing - indicatorLength
+	}
+	return 2
+}
+
 // RenderThreeLineStatus renders three navigation status lines
 func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 string) string {
 	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
@@ -248,12 +256,7 @@ func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 strin
 	// Line 1: Shift-up navigation + help text
 	line1 := "  " + shiftUp
 	if helpLine1 != "" {
-		spacing := minSpacing
-		if len(line1) < minSpacing {
-			spacing = minSpacing - len(line1)
-		} else {
-			spacing = 2
-		}
+		spacing := calculateSpacingForHelpText(len(line1), minSpacing)
 		line1 += strings.Repeat(" ", spacing) + helpLine1
 	}
 	content.WriteString(statusStyle.Render(line1))
@@ -262,14 +265,9 @@ func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 strin
 	// Line 2: S-C-P indicator + help text
 	line2 := scpIndicator
 	if helpLine2 != "" {
-		// Calculate spacing - SCP indicator is styled so calculate raw length
-		rawSCPLen := 5 // "S-C-P" is 5 characters
-		spacing := minSpacing
-		if rawSCPLen < minSpacing {
-			spacing = minSpacing - rawSCPLen
-		} else {
-			spacing = 2
-		}
+		// Calculate raw length without ANSI codes (S-C-P = 5 characters: 1+1+1+2 dashes)
+		rawSCPLen := len("S-C-P")
+		spacing := calculateSpacingForHelpText(rawSCPLen, minSpacing)
 		line2 += statusStyle.Render(strings.Repeat(" ", spacing) + helpLine2)
 	}
 	content.WriteString(line2)
@@ -278,12 +276,7 @@ func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 strin
 	// Line 3: Shift-down navigation + help text
 	line3 := "  " + shiftDown
 	if helpLine3 != "" {
-		spacing := minSpacing
-		if len(line3) < minSpacing {
-			spacing = minSpacing - len(line3)
-		} else {
-			spacing = 2
-		}
+		spacing := calculateSpacingForHelpText(len(line3), minSpacing)
 		line3 += strings.Repeat(" ", spacing) + helpLine3
 	}
 	content.WriteString(statusStyle.Render(line3))
