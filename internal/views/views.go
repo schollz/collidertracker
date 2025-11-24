@@ -184,8 +184,8 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	
 	switch m.ViewMode {
 	case types.SongView:
-		// Song view: no O above, M below
-		topLabel = ""
+		// Song view: O above, M below
+		topLabel = "O"
 		bottomLabel = "M"
 		
 	case types.ChainView:
