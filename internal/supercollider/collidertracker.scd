@@ -888,7 +888,7 @@ Routine{
 					((posCurFeedback < (sliceStartOriginal + 0.001)) * (posCurFeedbackLast >= (sliceStartOriginal + 0.001)))
 				);
 				// disable endToggled if retrigNumTotal > 0
-				endToggled = endToggled * (1 - (retrigNumTotal>0));
+				endToggled = endToggled * (1 - (retrigNumTotal>0)) * (\playthrough.ir(0)>0);
 				// bounce if end toggled
 				rate = rate * Select.kr(endToggled * sliceBounce,[1.0,-1.0]);
 				gate = gate * Select.kr(endToggled * (1 - sliceBounce),[1,0]);
