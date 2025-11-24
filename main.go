@@ -666,7 +666,13 @@ func (tm *TrackerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case input.TickMsg:
 		// Tempo/engine ticks: only advance playback here, at your musical rate.
 		if tm.model.IsPlaying {
+			// Always call AdvancePlayback:
+			// - Song mode: decrements ticksLeft counter
+			// - Phrase/Chain mode: advances to next row
+			// Note: We start with count=1 after emitting the initial row (which represents tick 0)
 			input.AdvancePlayback(tm.model)
+			// Increment tick count AFTER processing the current tick
+			tm.model.PlaybackTickCount++
 			// Reschedule the next tempo tick according to your input package.
 			return tm, input.Tick(tm.model)
 		}

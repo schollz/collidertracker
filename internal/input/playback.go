@@ -398,7 +398,7 @@ func ToggleSingleTrackPlayback(m *model.Model) tea.Cmd {
 
 func Tick(m *model.Model) tea.Cmd {
 	us := rowDurationMicroseconds(m)
-	
+
 	// If PlaybackStartTime is not set (zero time), initialize it now
 	// This can happen in tests or edge cases where playback was started differently
 	if m.PlaybackStartTime.IsZero() {
@@ -406,19 +406,16 @@ func Tick(m *model.Model) tea.Cmd {
 		m.PlaybackTickCount = 0
 		log.Printf("TIMING: Initialized PlaybackStartTime to %v", m.PlaybackStartTime)
 	}
-	
-	// Increment the tick count BEFORE calculating next tick time
-	// This is important because we want to schedule the NEXT tick
-	m.PlaybackTickCount++
-	
-	// Calculate the absolute time when the next tick should occur
+
+	// Calculate the absolute time when the next tick should occur based on CURRENT tick count
 	// This prevents drift accumulation by always scheduling relative to start time
+	// We calculate for the current tick BEFORE incrementing to avoid off-by-one error
 	nextTickTime := m.PlaybackStartTime.Add(time.Duration(float64(m.PlaybackTickCount) * us * nanosecondsPerMicrosecond))
 	now := time.Now()
-	
+
 	// Calculate how long to wait until the next tick
 	waitDuration := nextTickTime.Sub(now)
-	
+
 	// If we're running behind schedule (negative wait), schedule immediately
 	// but log a warning (only if the drift is significant - more than 100ms)
 	if waitDuration < 0 {
@@ -428,16 +425,21 @@ func Tick(m *model.Model) tea.Cmd {
 		}
 		waitDuration = 0
 	}
-	
+
 	// Log timing information periodically (every 60 ticks for debugging)
-	if m.PlaybackTickCount%60 == 0 {
+	if m.PlaybackTickCount%60 == 0 && m.PlaybackTickCount > 0 {
 		elapsed := now.Sub(m.PlaybackStartTime)
-		expectedElapsed := time.Duration(float64(m.PlaybackTickCount) * us * nanosecondsPerMicrosecond)
+		// We start PlaybackTickCount at 1 (representing tick 0), so subtract 1 for expected time
+		// E.g., when count=60, we've processed ticks 0-59, expected time is 59*interval
+		expectedElapsed := time.Duration(float64(m.PlaybackTickCount-1) * us * nanosecondsPerMicrosecond)
 		drift := elapsed - expectedElapsed
 		log.Printf("TIMING: Tick %d - Elapsed: %v, Expected: %v, Drift: %v",
 			m.PlaybackTickCount, elapsed, expectedElapsed, drift)
 	}
-	
+
+	// Note: PlaybackTickCount is incremented in the TickMsg handler AFTER AdvancePlayback
+	// This ensures the count represents "ticks processed" not "ticks scheduled"
+
 	return tea.Tick(waitDuration, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})

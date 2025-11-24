@@ -1634,11 +1634,10 @@ func stopPlayback(m *model.Model) {
 func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 	m.IsPlaying = true
 	m.PlaybackMode = config.Mode
-	
+
 	// Initialize timing tracking for drift-free playback
-	m.PlaybackStartTime = time.Now()
+	// Note: PlaybackStartTime will be set right after the first note is emitted
 	m.PlaybackTickCount = 0
-	log.Printf("TIMING: Playback started at %v", m.PlaybackStartTime)
 
 	// Initialize increment counters to -1 for all tracks/phrases/rows
 	for track := 0; track < 8; track++ {
@@ -1737,6 +1736,12 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 			EmitRowDataFor(m, 0, m.SongPlaybackRowInPhrase[0], 0)
 			log.Printf("Song track 0 fallback started at phrase 0, row %d with %d ticks", m.SongPlaybackRowInPhrase[0], m.SongPlaybackTicksLeft[0])
 		}
+
+		// Start the playback clock NOW, after all initial notes have been emitted (including fallback)
+		// Set tick count to 1 because the initial emission represents tick 0
+		m.PlaybackStartTime = time.Now()
+		m.PlaybackTickCount = 1
+		log.Printf("TIMING: Playback clock started at %v (tick count = 1)", m.PlaybackStartTime)
 	} else if config.Mode == types.ChainView {
 		// Chain playback mode - find appropriate starting phrase
 		m.PlaybackChain = config.Chain
@@ -1792,8 +1797,15 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 			m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 		}
 
+		// Emit the initial row
 		DebugLogRowEmission(m)
-		log.Printf("Chain playback started at chain %d, chain row %d, phrase %d, phrase row %d", m.PlaybackChain, m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow)
+		log.Printf("Chain playback started at chain %d, chain row %d, phrase %d, row %d", m.PlaybackChain, m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow)
+
+		// Start the playback clock NOW, after the initial note has been emitted
+		// Set tick count to 1 because the initial emission represents tick 0
+		m.PlaybackStartTime = time.Now()
+		m.PlaybackTickCount = 1
+		log.Printf("TIMING: Playback clock started at %v (tick count = 1)", m.PlaybackStartTime)
 	} else {
 		// Phrase playback mode
 		m.PlaybackPhrase = config.Phrase
@@ -1812,8 +1824,15 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 			log.Printf("DEBUG: FindFirstNonEmptyRowInPhrase returned row %d for track %d", m.PlaybackRow, m.CurrentTrack)
 		}
 
+		// Emit the initial row
 		DebugLogRowEmission(m)
 		log.Printf("Phrase playback started at phrase %d, row %d", m.PlaybackPhrase, m.PlaybackRow)
+
+		// Start the playback clock NOW, after the initial note has been emitted
+		// Set tick count to 1 because the initial emission represents tick 0
+		m.PlaybackStartTime = time.Now()
+		m.PlaybackTickCount = 1
+		log.Printf("TIMING: Playback clock started at %v (tick count = 1)", m.PlaybackStartTime)
 	}
 
 	// Start recording if enabled
@@ -1830,10 +1849,9 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 // startPlaybackWithConfigFromCtrlSpace is specialized for Ctrl+Space recording context
 func startPlaybackWithConfigFromCtrlSpace(m *model.Model, config PlaybackConfig) tea.Cmd {
 	// Initialize timing tracking for drift-free playback
-	m.PlaybackStartTime = time.Now()
+	// Note: PlaybackStartTime will be set right after the first note is emitted
 	m.PlaybackTickCount = 0
-	log.Printf("TIMING: Playback started at %v (from Ctrl+Space)", m.PlaybackStartTime)
-	
+
 	// Initialize increment counters to -1 for all tracks/phrases/rows
 	for track := 0; track < 8; track++ {
 		for phrase := 0; phrase < 255; phrase++ {
@@ -1901,6 +1919,12 @@ func startPlaybackWithConfigFromCtrlSpace(m *model.Model, config PlaybackConfig)
 		}
 
 		log.Printf("Song playback initialized (Ctrl+Space)")
+
+		// Start the playback clock NOW, after all initial notes have been emitted
+		// Set tick count to 1 because the initial emission represents tick 0
+		m.PlaybackStartTime = time.Now()
+		m.PlaybackTickCount = 1
+		log.Printf("TIMING: Playback clock started at %v (Ctrl+Space, tick count = 1)", m.PlaybackStartTime)
 	} else {
 		// Chain/Phrase playback modes - same logic as regular playback
 		if config.Mode == types.ChainView {
@@ -1930,6 +1954,8 @@ func startPlaybackWithConfigFromCtrlSpace(m *model.Model, config PlaybackConfig)
 				m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 			}
 
+			// Emit the initial row
+			DebugLogRowEmission(m)
 			log.Printf("Chain playback started (Ctrl+Space): chain %d, phrase %d, row %d", m.PlaybackChain, m.PlaybackPhrase, m.PlaybackRow)
 		} else {
 			// Phrase playback mode
@@ -1942,8 +1968,16 @@ func startPlaybackWithConfigFromCtrlSpace(m *model.Model, config PlaybackConfig)
 				m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 			}
 
+			// Emit the initial row
+			DebugLogRowEmission(m)
 			log.Printf("Phrase playback started (Ctrl+Space): phrase %d, row %d", m.PlaybackPhrase, m.PlaybackRow)
 		}
+
+		// Start the playback clock NOW, after the initial note has been emitted
+		// Set tick count to 1 because the initial emission represents tick 0
+		m.PlaybackStartTime = time.Now()
+		m.PlaybackTickCount = 1
+		log.Printf("TIMING: Playback clock started at %v (Ctrl+Space, tick count = 1)", m.PlaybackStartTime)
 	}
 
 	// Start recording if enabled (with Ctrl+Space context)
