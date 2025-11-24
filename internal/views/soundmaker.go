@@ -84,8 +84,7 @@ func GetSoundMakerStatusMessage(m *model.Model) string {
 		}
 	}
 
-	baseMsg := fmt.Sprintf("Up/Down: Navigate | SPACE: Select SoundMaker | %s+Arrow: Adjust values | Shift+Left: Back to Phrase view", input.GetModifierKey())
-	return fmt.Sprintf("%s | %s", columnStatus, baseMsg)
+	return columnStatus
 }
 
 func RenderSoundMakerView(m *model.Model) string {
@@ -225,5 +224,5 @@ func RenderSoundMakerView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, statusMsg, 15) // Fixed height for stable view
+	}, fmt.Sprintf("Up/Down: Navigate | SPACE: Select | %s+Arrow: Adjust", input.GetModifierKey()), statusMsg, 15) // Fixed height for stable view
 }

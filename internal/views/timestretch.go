@@ -97,8 +97,9 @@ func RenderTimestrechView(m *model.Model) string {
 	content.WriteString("\n\n")
 
 	// Footer with status
-	statusMsg := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust values | Shift+Left: Back to Phrase view", input.GetModifierKey())
-	content.WriteString(RenderFooter(m, 8, statusMsg))
+	helpText := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust", input.GetModifierKey())
+	statusMsg := fmt.Sprintf("Timestretch: %.2fx to %.2fx", settings.Start, settings.End)
+	content.WriteString(RenderFooter(m, 8, helpText, statusMsg))
 
 	// Apply container padding
 	return containerStyle.Render(content.String())

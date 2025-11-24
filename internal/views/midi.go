@@ -28,8 +28,7 @@ func GetMidiStatusMessage(m *model.Model) string {
 		}
 	}
 
-	baseMsg := fmt.Sprintf("Up/Down: Navigate | SPACE: Select device | %s+Arrow: Adjust values | Shift+Left: Back to Phrase view", input.GetModifierKey())
-	return fmt.Sprintf("%s | %s", columnStatus, baseMsg)
+	return columnStatus
 }
 
 func RenderMidiView(m *model.Model) string {
@@ -97,5 +96,5 @@ func RenderMidiView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, statusMsg, m.GetVisibleRows()) // Use dynamic visible rows
+	}, fmt.Sprintf("Up/Down: Navigate | SPACE: Select | %s+Arrow: Adjust", input.GetModifierKey()), statusMsg, m.GetVisibleRows()) // Use dynamic visible rows
 }

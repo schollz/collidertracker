@@ -38,8 +38,7 @@ func GetArpeggioStatusMessage(m *model.Model) string {
 		columnStatus = fmt.Sprintf("Divisor /%s", divisorText)
 	}
 
-	baseMsg := fmt.Sprintf("Up/Down: Navigate rows | Left/Right: Navigate columns | %s+Arrow: Adjust values | Shift+Left: Back to Phrase view", input.GetModifierKey())
-	return fmt.Sprintf("%s | %s", columnStatus, baseMsg)
+	return columnStatus
 }
 
 func RenderArpeggioView(m *model.Model) string {
@@ -119,5 +118,5 @@ func RenderArpeggioView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, statusMsg, 18) // 16 rows + 1 header + 1 spacing
+	}, fmt.Sprintf("Up/Down/Left/Right: Navigate | %s+Arrow: Adjust", input.GetModifierKey()), statusMsg, 18) // 16 rows + 1 header + 1 spacing
 }

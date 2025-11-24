@@ -438,8 +438,9 @@ func RenderSamplerPhraseView(m *model.Model) string {
 	}
 
 	// Footer with status
+	helpText := GetPhraseHelpText(m)
 	statusMsg := GetPhraseStatusMessage(m)
-	content.WriteString(RenderFooter(m, visibleRows+1, statusMsg)) // +1 for header
+	content.WriteString(RenderFooter(m, visibleRows+1, helpText, statusMsg)) // +1 for header
 
 	// Apply container padding to entire content
 	return containerStyle.Render(content.String())
@@ -450,7 +451,6 @@ func GetPhraseStatusMessage(m *model.Model) string {
 
 	// Use correct sampler UI column indices
 	rtUI := int(types.SamplerColRT)
-	tsUI := int(types.SamplerColTS)
 	moUI := int(types.SamplerColMO)
 	duUI := int(types.SamplerColDU)
 	fiUI := int(types.SamplerColFI)
@@ -655,15 +655,18 @@ func GetPhraseStatusMessage(m *model.Model) string {
 		statusMsg += " | Stopped (SPACE to play)"
 	}
 
-	// Add context-sensitive Shift+Right action based on current column
-	if m.CurrentCol == rtUI {
-		statusMsg += " | Shift+Right: Retrigger | Shift+Left: Back to chain view"
-	} else if m.CurrentCol == tsUI {
-		statusMsg += " | Shift+Right: Timestretch | Shift+Left: Back to chain view"
-	} else if m.CurrentCol == duUI {
-		statusMsg += " | Shift+Right: Ducking | Shift+Left: Back to chain view"
-	} else {
-		statusMsg += " | Shift+Right: File browser | Shift+Left: Back to chain view"
-	}
 	return statusMsg
+}
+
+// GetPhraseHelpText returns the help text for phrase view based on current column
+func GetPhraseHelpText(m *model.Model) string {
+	phraseViewType := m.GetPhraseViewType()
+	
+	if phraseViewType == types.InstrumentPhraseView {
+		// Instrument phrase view
+		return "left/right/up/down moving around"
+	} else {
+		// Sampler phrase view
+		return "left/right/up/down moving around"
+	}
 }

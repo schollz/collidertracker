@@ -88,5 +88,5 @@ func RenderChainView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, GetChainStatusMessage(m), 17) // 16 rows + 1 for header
+	}, "Shift+Right to enter phrase", GetChainStatusMessage(m), 17) // 16 rows + 1 for header
 }

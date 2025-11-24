@@ -268,6 +268,7 @@ func TestRenderViewWithCommonPattern(t *testing.T) {
 		func(styles *ViewStyles) string {
 			return "Test Content"
 		},
+		"help text here",
 		"Status Message",
 		10,
 	)

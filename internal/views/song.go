@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/schollz/collidertracker/internal/input"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/ticks"
 	"github.com/schollz/collidertracker/internal/types"
@@ -146,7 +145,7 @@ func RenderSongView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, GetSongStatusMessage(m), 18) // 16 rows + 2 for header
+	}, "left/right/up/down moving around song view", GetSongStatusMessage(m), 18) // 16 rows + 2 for header
 }
 
 // GetSongStatusMessage returns the status message for song view
@@ -224,6 +223,5 @@ func GetSongStatusMessage(m *model.Model) string {
 		statusMsg += " | Stopped"
 	}
 
-	statusMsg += fmt.Sprintf(" | Shift+Right: Enter | %s+Arrows: Edit", input.GetModifierKey())
 	return statusMsg
 }

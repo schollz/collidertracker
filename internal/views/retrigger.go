@@ -178,8 +178,9 @@ func RenderRetriggerView(m *model.Model) string {
 	content.WriteString("\n\n")
 
 	// Footer with status
-	statusMsg := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust values | Shift+Left: Back to Phrase view", input.GetModifierKey())
-	content.WriteString(RenderFooter(m, 13, statusMsg))
+	helpText := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust", input.GetModifierKey())
+	statusMsg := fmt.Sprintf("Retrigger: %d times, %.2f/beat to %.2f/beat", settings.Times, settings.Start, settings.End)
+	content.WriteString(RenderFooter(m, 13, helpText, statusMsg))
 
 	// Apply container padding
 	return containerStyle.Render(content.String())

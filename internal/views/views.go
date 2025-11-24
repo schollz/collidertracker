@@ -8,7 +8,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/schollz/collidertracker/internal/input"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/types"
 )
@@ -46,7 +45,7 @@ func getCommonStyles() *ViewStyles {
 }
 
 // renderViewWithCommonPattern provides a common structure for rendering views
-func renderViewWithCommonPattern(m *model.Model, leftHeader, rightHeader string, renderContent func(styles *ViewStyles) string, statusMsg string, contentLines int) string {
+func renderViewWithCommonPattern(m *model.Model, leftHeader, rightHeader string, renderContent func(styles *ViewStyles) string, helpText string, statusMsg string, contentLines int) string {
 	styles := getCommonStyles()
 
 	// Content builder - same pattern as working views
@@ -58,8 +57,8 @@ func renderViewWithCommonPattern(m *model.Model, leftHeader, rightHeader string,
 	// Render view-specific content
 	content.WriteString(renderContent(styles))
 
-	// Render footer
-	content.WriteString(RenderFooter(m, contentLines, statusMsg))
+	// Render footer with navigation help text and status message
+	content.WriteString(RenderFooter(m, contentLines, helpText, statusMsg))
 
 	// Apply container padding to entire content - same as working views
 	return styles.Container.Render(content.String())
@@ -161,8 +160,191 @@ func RenderHeader(m *model.Model, leftContent, rightContent string) string {
 	return content.String()
 }
 
-// RenderFooter handles the common pattern of filling remaining space and adding status
-func RenderFooter(m *model.Model, contentLines int, statusMsg string) string {
+// RenderNavigationLines renders the standard 3-line navigation display at the top of the status section
+// Format:
+//   O          ← Shift+Up target (Options)
+// S-C-P        ← Current view indicator (highlighted) + Shift+Right target + help text
+//   M          ← Shift+Down target (Mixer)
+func RenderNavigationLines(m *model.Model, helpText string) string {
+	highlightStyle := lipgloss.NewStyle().Background(lipgloss.Color("7")).Foreground(lipgloss.Color("0"))
+	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	
+	var line1, line2, line3 string
+	
+	// Determine what's accessible from current view
+	var shiftUpAvailable bool
+	var shiftDownAvailable bool
+	
+	switch m.ViewMode {
+	case types.SongView:
+		shiftUpAvailable = false
+		shiftDownAvailable = true
+		
+	case types.ChainView:
+		shiftUpAvailable = true
+		shiftDownAvailable = true
+		
+	case types.PhraseView:
+		shiftUpAvailable = true
+		shiftDownAvailable = true
+		
+	case types.SettingsView:
+		shiftUpAvailable = false
+		shiftDownAvailable = true
+		
+	case types.MixerView:
+		shiftUpAvailable = true
+		shiftDownAvailable = false
+		
+	case types.FileView, types.RetriggerView, types.TimestrechView,
+		types.ModulateView, types.ArpeggioView, types.MidiView, 
+		types.SoundMakerView, types.DuckingView:
+		shiftUpAvailable = true
+		shiftDownAvailable = false
+		
+	default:
+		shiftUpAvailable = false
+		shiftDownAvailable = false
+	}
+	
+	// Build the 3 lines
+	// Line 1: Options (O) if available from current view
+	if shiftUpAvailable {
+		line1 = "  " + dimStyle.Render("O")
+	} else {
+		line1 = ""
+	}
+	
+	// Line 2: Current view path (S-C-P or variations)
+	line2 = buildNavigationChain(m, highlightStyle, dimStyle, helpText)
+	
+	// Line 3: Mixer (M) if available from current view
+	if shiftDownAvailable {
+		line3 = "  " + dimStyle.Render("M")
+	} else {
+		line3 = ""
+	}
+	
+	return line1 + "\n" + line2 + "\n" + line3
+}
+
+// buildNavigationChain builds the main navigation chain line (e.g., "S-C-P")
+func buildNavigationChain(m *model.Model, highlightStyle, dimStyle lipgloss.Style, helpText string) string {
+	var chain string
+	
+	// Build the navigation chain based on current view
+	switch m.ViewMode {
+	case types.SongView:
+		// S is highlighted, -C-P is shown dimmed
+		chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
+		
+	case types.ChainView:
+		// S-C-P with C highlighted
+		chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P")
+		
+	case types.PhraseView:
+		// S-C-P-X format with P highlighted, X varies by column
+		fourthChar := determinePhraseFourthChar(m)
+		chain = dimStyle.Render("S-C-") + highlightStyle.Render("P") + dimStyle.Render(fourthChar)
+		
+	case types.FileView:
+		// S-C-P-F with F highlighted (file browser from phrase view)
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("F")
+		
+	case types.RetriggerView:
+		// S-C-P-R with R highlighted
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("R")
+		
+	case types.TimestrechView:
+		// S-C-P-T with T highlighted
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("T")
+		
+	case types.ModulateView:
+		// S-C-P-O with O highlighted (mOdulate)
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("O")
+		
+	case types.ArpeggioView:
+		// S-C-P-A with A highlighted
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("A")
+		
+	case types.MidiView:
+		// S-C-P-I with I highlighted (mIdI)
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("I")
+		
+	case types.SoundMakerView:
+		// S-C-P-S with S highlighted
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("S")
+		
+	case types.DuckingView:
+		// S-C-P-D with D highlighted
+		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("D")
+		
+	case types.SettingsView:
+		// Just O highlighted (standalone)
+		chain = highlightStyle.Render("O")
+		
+	case types.MixerView:
+		// Just M highlighted (standalone)
+		chain = highlightStyle.Render("M")
+		
+	default:
+		chain = highlightStyle.Render("?")
+	}
+	
+	// Add help text starting at column 15 if provided
+	if helpText != "" {
+		// Calculate padding needed to reach column 15
+		// Account for ANSI codes by measuring the rendered width
+		chainWidth := lipgloss.Width(chain)
+		paddingNeeded := 14 - chainWidth
+		if paddingNeeded < 1 {
+			paddingNeeded = 1
+		}
+		return chain + strings.Repeat(" ", paddingNeeded) + helpText
+	}
+	
+	return chain
+}
+
+// determinePhraseFourthChar determines the 4th character in the navigation based on the current column in phrase view
+func determinePhraseFourthChar(m *model.Model) string {
+	phraseViewType := m.GetPhraseViewType()
+	
+	if phraseViewType == types.InstrumentPhraseView {
+		// Instrument phrase view columns
+		switch m.CurrentCol {
+		case int(types.InstrumentColAR):
+			return "-A" // Arpeggio
+		case int(types.InstrumentColSOMI):
+			// Check the mode to determine if it's MIDI or SoundMaker
+			if m.SOColumnMode == types.SOModeMIDI {
+				return "-I" // mIdI
+			}
+			return "-S" // SoundMaker
+		case int(types.InstrumentColDU):
+			return "-D" // Ducking
+		default:
+			return "-F" // File browser (default)
+		}
+	} else {
+		// Sampler phrase view columns
+		switch m.CurrentCol {
+		case int(types.SamplerColRT):
+			return "-R" // Retrigger
+		case int(types.SamplerColTS):
+			return "-T" // Timestretch
+		case int(types.SamplerColMO):
+			return "-O" // mOdulate
+		case int(types.SamplerColDU):
+			return "-D" // Ducking
+		default:
+			return "-F" // File browser (default)
+		}
+	}
+}
+
+// RenderFooter handles the common pattern of filling remaining space and adding navigation + status
+func RenderFooter(m *model.Model, contentLines int, helpText string, statusMsg string) string {
 	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	var content strings.Builder
 
@@ -173,8 +355,14 @@ func RenderFooter(m *model.Model, contentLines int, statusMsg string) string {
 		}
 	}
 
-	// Status message
-	content.WriteString(statusStyle.Render(statusMsg))
+	// Render navigation lines with help text
+	content.WriteString(RenderNavigationLines(m, helpText))
+	
+	// Add status message if provided
+	if statusMsg != "" {
+		content.WriteString("\n")
+		content.WriteString(statusStyle.Render(statusMsg))
+	}
 
 	return content.String()
 }
@@ -199,7 +387,6 @@ func GetChainStatusMessage(m *model.Model) string {
 		statusMsg = fmt.Sprintf("Chain %02X Row %02X: Phrase %02X", m.CurrentChain, m.CurrentRow, phraseID)
 	}
 
-	statusMsg += fmt.Sprintf(" | Shift+Right: Enter phrase | %s+Arrow: Edit phrase", input.GetModifierKey())
 	return statusMsg
 }
 

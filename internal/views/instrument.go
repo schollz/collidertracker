@@ -634,8 +634,9 @@ func RenderInstrumentPhraseView(m *model.Model) string {
 	}
 
 	// Footer with status
+	helpText := GetPhraseHelpText(m)
 	statusMsg := GetInstrumentPhraseStatusMessage(m)
-	content.WriteString(RenderFooter(m, visibleRows+1, statusMsg)) // +1 for header
+	content.WriteString(RenderFooter(m, visibleRows+1, helpText, statusMsg)) // +1 for header
 
 	// Apply container padding to entire content
 	return containerStyle.Render(content.String())
@@ -1062,17 +1063,17 @@ func GetInstrumentPhraseStatusMessage(m *model.Model) string {
 		statusMsg += " | Stopped (SPACE to play)"
 	}
 
-	// Add context-sensitive Shift+Right action and column mode info based on current column
+	// Add context-sensitive column mode info based on current column
 	if m.CurrentCol == int(types.InstrumentColSOMI) {
 		if m.SOColumnMode == types.SOModeMIDI {
-			statusMsg += " | Shift+Right: MIDI Settings | Ctrl+Down/Left: Switch to SO | Shift+Left: Back to chain view"
+			statusMsg += " | MIDI mode | Ctrl+Down/Left: Switch to SO"
 		} else {
-			statusMsg += " | Shift+Right: SoundMaker Settings | Ctrl+Up/Right: Switch to MI | Shift+Left: Back to chain view"
+			statusMsg += " | SoundMaker mode | Ctrl+Up/Right: Switch to MI"
 		}
+	} else if m.CurrentCol == int(types.InstrumentColAR) {
+		statusMsg += " | Arpeggio mode"
 	} else if m.CurrentCol == int(types.InstrumentColDU) {
-		statusMsg += " | Shift+Right: Ducking | Shift+Left: Back to chain view"
-	} else {
-		statusMsg += " | Shift+Left: Back to chain view"
+		statusMsg += " | Ducking mode"
 	}
 	return statusMsg
 }
