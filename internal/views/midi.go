@@ -96,5 +96,5 @@ func RenderMidiView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, fmt.Sprintf("Up/Down: Navigate | SPACE: Select | %s+Arrow: Adjust", input.GetModifierKey()), statusMsg, m.GetVisibleRows()) // Use dynamic visible rows
+	}, fmt.Sprintf("arrows: navigate | space: select | %s+arrows: adjust", input.GetModifierKey()), statusMsg, m.GetVisibleRows()) // Use dynamic visible rows
 }

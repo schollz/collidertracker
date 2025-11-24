@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/schollz/collidertracker/internal/input"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/ticks"
 	"github.com/schollz/collidertracker/internal/types"
@@ -88,5 +89,5 @@ func RenderChainView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, "Shift+Right to enter phrase", GetChainStatusMessage(m), 17) // 16 rows + 1 for header
+	}, fmt.Sprintf("arrows: edit | %s+arrows: edit phrase", input.GetModifierKey()), GetChainStatusMessage(m), 17) // 16 rows + 1 for header
 }

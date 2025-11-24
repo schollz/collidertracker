@@ -660,13 +660,5 @@ func GetPhraseStatusMessage(m *model.Model) string {
 
 // GetPhraseHelpText returns the help text for phrase view based on current column
 func GetPhraseHelpText(m *model.Model) string {
-	phraseViewType := m.GetPhraseViewType()
-	
-	if phraseViewType == types.InstrumentPhraseView {
-		// Instrument phrase view
-		return "left/right/up/down moving around"
-	} else {
-		// Sampler phrase view
-		return "left/right/up/down moving around"
-	}
+	return fmt.Sprintf("arrows: navigate | %s+arrows: edit", input.GetModifierKey())
 }

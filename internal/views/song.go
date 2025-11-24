@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/schollz/collidertracker/internal/input"
 	"github.com/schollz/collidertracker/internal/model"
 	"github.com/schollz/collidertracker/internal/ticks"
 	"github.com/schollz/collidertracker/internal/types"
@@ -145,7 +146,7 @@ func RenderSongView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, "left/right/up/down moving around song view", GetSongStatusMessage(m), 18) // 16 rows + 2 for header
+	}, fmt.Sprintf("arrows: move | %s+arrows: edit", input.GetModifierKey()), GetSongStatusMessage(m), 18) // 16 rows + 2 for header
 }
 
 // GetSongStatusMessage returns the status message for song view

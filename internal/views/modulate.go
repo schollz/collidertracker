@@ -164,7 +164,7 @@ func RenderModulateView(m *model.Model) string {
 	content.WriteString("\n\n")
 
 	// Footer with status
-	helpText := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust", input.GetModifierKey())
+	helpText := fmt.Sprintf("arrows: navigate | %s+arrows: adjust", input.GetModifierKey())
 	statusMsg := fmt.Sprintf("Modulate settings")
 	content.WriteString(RenderFooter(m, 9, helpText, statusMsg))
 

@@ -118,5 +118,5 @@ func RenderArpeggioView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, fmt.Sprintf("Up/Down/Left/Right: Navigate | %s+Arrow: Adjust", input.GetModifierKey()), statusMsg, 18) // 16 rows + 1 header + 1 spacing
+	}, fmt.Sprintf("arrows: navigate | %s+arrows: adjust", input.GetModifierKey()), statusMsg, 18) // 16 rows + 1 header + 1 spacing
 }

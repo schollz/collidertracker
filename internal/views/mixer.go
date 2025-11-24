@@ -250,5 +250,5 @@ func RenderMixerView(m *model.Model) string {
 		content.WriteString("\n\n")
 
 		return content.String()
-	}, fmt.Sprintf("Left/Right: Select | %s+Arrow: Adjust", input.GetModifierKey()), getMixerStatusMessage(m), 12)
+	}, fmt.Sprintf("left/right: select | %s+arrows: adjust", input.GetModifierKey()), getMixerStatusMessage(m), 12)
 }

@@ -178,7 +178,7 @@ func RenderRetriggerView(m *model.Model) string {
 	content.WriteString("\n\n")
 
 	// Footer with status
-	helpText := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust", input.GetModifierKey())
+	helpText := fmt.Sprintf("arrows: navigate | %s+arrows: adjust", input.GetModifierKey())
 	statusMsg := fmt.Sprintf("Retrigger: %d times, %.2f/beat to %.2f/beat", settings.Times, settings.Start, settings.End)
 	content.WriteString(RenderFooter(m, 13, helpText, statusMsg))
 

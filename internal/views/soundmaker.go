@@ -224,5 +224,5 @@ func RenderSoundMakerView(m *model.Model) string {
 		}
 
 		return content.String()
-	}, fmt.Sprintf("Up/Down: Navigate | SPACE: Select | %s+Arrow: Adjust", input.GetModifierKey()), statusMsg, 15) // Fixed height for stable view
+	}, fmt.Sprintf("arrows: navigate | space: select | %s+arrows: adjust", input.GetModifierKey()), statusMsg, 15) // Fixed height for stable view
 }

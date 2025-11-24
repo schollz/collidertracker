@@ -52,7 +52,10 @@ func renderViewWithCommonPattern(m *model.Model, leftHeader, rightHeader string,
 	var content strings.Builder
 
 	// Render header (includes waveform) - same as working views
-	content.WriteString(RenderHeader(m, leftHeader, rightHeader))
+	// Only render if leftHeader or rightHeader is provided, otherwise the view handles it
+	if leftHeader != "" || rightHeader != "" {
+		content.WriteString(RenderHeader(m, leftHeader, rightHeader))
+	}
 
 	// Render view-specific content
 	content.WriteString(renderContent(styles))

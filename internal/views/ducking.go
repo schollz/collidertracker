@@ -119,7 +119,7 @@ func RenderDuckingView(m *model.Model) string {
 	content.WriteString("\n")
 
 	// Footer with status
-	helpText := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust", input.GetModifierKey())
+	helpText := fmt.Sprintf("arrows: navigate | %s+arrows: adjust", input.GetModifierKey())
 	statusMsg := fmt.Sprintf("Ducking settings")
 	footerPad := 6
 	if settings.Type == 2 {
