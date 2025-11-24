@@ -404,25 +404,25 @@ Routine{
 				sustain: \sustain.kr(0.7),
 				release: \release.kr(0.5),
 				cutoff: \lowPassFilter.kr(440).explin(100,20000,0.001,1).min(1.0).max(0.0),  // Control cutoff with mouse Y position
-				resonance: \resonance.kr(0.1),
-				envMod: \envMod.kr(0.1),  // Control envelope modulation with mouse X position
-				saw: \oscSaw.kr(0.5),
-				pulse: \oscPulse.kr(0.0),
-				sub: \oscSub.kr(0.5),
-				noise: \oscNoise.kr(0.0),
-				pwm: \oscPwm.kr(0.5),
-				chorus: \junoChorus.kr(4), // 0 = off, 1, 2, 3, 4, 5, 6 are different chorus types
-				chorusDrywet:  \chorusDrywet.kr(0.5),
-				lfoRate: \lfoRate.kr(0.3),
-				lfoDelay: \lfoDelay.kr(0.2),
-				lfoAuto: 1.0, // LFO auto-triggers and resets its phase when a note  is played
-				dcoLfo: \dcoLfo.kr(0.05),
+				resonance: \juno60Resonance.kr(0.1),
+				envMod: \juno60EnvMod.kr(0.1),  // Control envelope modulation with mouse X position
+				saw: \juno60OscSaw.kr(0.5),
+				pulse: \juno60OscPulse.kr(0.0),
+				sub: \juno60OscSub.kr(0.5),
+				noise: \juno60OscNoise.kr(0.0),
+				pwm: \juno60OscPwm.kr(0.5),
+				chorus: \juno60JunoChorus.kr(4), // 0 = off, 1, 2, 3, 4, 5, 6 are different chorus types
+				chorusDrywet:  \juno60ChorusDryWet.kr(0.5),
+				lfoRate: \juno60LfoRate.kr(0.3),
+				lfoDelay: \juno60LfoDelay.kr(0.2),
+				lfoAuto: \juno60LfoAuto.kr(1.0), // LFO auto-triggers and resets its phase when a note  is played
+				dcoLfo: \juno60DcoLfo.kr(0.05),
 				dcoPwmMod: 1.0,
-				dcoRange: \dcoRange.kr(1.0), // 1.0 = same pitch, 0.5 = one octave down, 2.0 = one octave up
+				dcoRange: \juno60DcoRange.kr(1.0), // 1.0 = same pitch, 0.5 = one octave down, 2.0 = one octave up
 				hpf: \highPassFilter.kr(100).explin(10,20000,0.0001,1).min(1.0).max(0.0),  // Control high-pass filter with mouse Y position
-				vcfLfo: \vcfLfo.kr(0.05),
-				vcfKey: \vcfKey.kr(0.5),
-				vcfDir: \vcfDir.kr(1),
+				vcfLfo: \juno60VcfLfo.kr(0.05),
+				vcfKey: \juno60VcfKey.kr(0.5),
+				vcfDir: \juno60VcfDir.kr(1),
 				vcaType: 0.0, // 0 = envelope, 1 = gate
 				vcaValue: 1.0,
 				doneAction: 2
