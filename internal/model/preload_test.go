@@ -7,6 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Track type constants for better readability
+const (
+	TrackTypeInstrument = false // false = Instrument track
+	TrackTypeSampler    = true  // true = Sampler track
+)
+
 func TestPreloadUpcomingSamples(t *testing.T) {
 	m := NewModel(57120, "test-preload.json", false)
 
@@ -51,7 +57,7 @@ func TestPreloadUpcomingSamples(t *testing.T) {
 	m.PreloadUpcomingSamples(8, 8)
 
 	// Instrument track - should return safely (no files to preload)
-	m.TrackTypes[0] = false // Set track 0 to instrument
+	m.TrackTypes[0] = TrackTypeInstrument // Set track 0 to instrument
 	m.PreloadUpcomingSamples(0, 8)
 
 	// Test with nil phrases files (edge case)
@@ -70,7 +76,7 @@ func TestGetPhrasesFilesForTrack(t *testing.T) {
 	assert.Equal(t, &m.SamplerPhrasesFiles, files, "Should return SamplerPhrasesFiles")
 
 	// Test instrument track
-	m.TrackTypes[2] = false // Set track 2 to instrument (false = Instrument)
+	m.TrackTypes[2] = TrackTypeInstrument // Set track 2 to instrument
 	files = m.GetPhrasesFilesForTrack(2)
 	assert.Nil(t, files, "Instrument track should return nil (no files)")
 

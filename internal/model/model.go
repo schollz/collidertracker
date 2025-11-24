@@ -2321,8 +2321,8 @@ func (m *Model) PreloadUpcomingSamples(track int, lookaheadRows int) {
 		return
 	}
 	
-	// Only preload for sampler tracks
-	if m.TrackTypes[track] == false { // false = Instrument
+	// Skip preloading for instrument tracks (they don't use sample files)
+	if m.TrackTypes[track] == false { // false = Instrument, true = Sampler
 		return
 	}
 

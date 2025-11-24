@@ -1349,7 +1349,7 @@ Routine{
     				["starting async load of", filename].postln;
     				~sampleLoadingQueue.put(filename, true);
     				
-    				// Use Buffer.readNoUpdate for non-blocking load
+    				// Use Buffer.read for async loading
     				// This returns immediately and calls action when done
     				~sampleCache.put(filename, Buffer.read(s, filename, action: { |b|
     					["loaded", b, b.numChannels].postln;
