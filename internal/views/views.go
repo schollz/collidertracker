@@ -182,6 +182,8 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	var topLabel string
 	var bottomLabel string
 	var highlightPosition int // Position of the highlighted character (0-based)
+	var highlightTopLabel bool // Whether to highlight the top label
+	var highlightBottomLabel bool // Whether to highlight the bottom label
 	
 	switch m.ViewMode {
 	case types.SongView:
@@ -217,6 +219,7 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 		}
 		topLabel = "O"
 		bottomLabel = "M"
+		highlightTopLabel = true // Highlight O in Settings view
 		
 	case types.MixerView:
 		// Mixer view: O above, S-C-P in middle, M below
@@ -233,6 +236,7 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 		}
 		topLabel = "O"
 		bottomLabel = "M"
+		highlightBottomLabel = true // Highlight M in Mixer view
 		
 	case types.FileView:
 		// File browser: D above F
@@ -262,7 +266,11 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	// Build the 3 lines with proper alignment
 	// Line 1: Top label aligned with the highlighted character
 	if topLabel != "" {
-		line1 = strings.Repeat(" ", highlightPosition) + dimStyle.Render(topLabel)
+		if highlightTopLabel {
+			line1 = strings.Repeat(" ", highlightPosition) + highlightStyle.Render(topLabel)
+		} else {
+			line1 = strings.Repeat(" ", highlightPosition) + dimStyle.Render(topLabel)
+		}
 	} else {
 		line1 = ""
 	}
@@ -272,7 +280,11 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	
 	// Line 3: Bottom label aligned with the highlighted character
 	if bottomLabel != "" {
-		line3 = strings.Repeat(" ", highlightPosition) + dimStyle.Render(bottomLabel)
+		if highlightBottomLabel {
+			line3 = strings.Repeat(" ", highlightPosition) + highlightStyle.Render(bottomLabel)
+		} else {
+			line3 = strings.Repeat(" ", highlightPosition) + dimStyle.Render(bottomLabel)
+		}
 	} else {
 		line3 = ""
 	}
