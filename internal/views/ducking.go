@@ -118,13 +118,13 @@ func RenderDuckingView(m *model.Model) string {
 
 	content.WriteString("\n")
 
-	// Footer with status
+	// Footer with three-line status
 	statusMsg := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust values | Shift+Left: Back to Phrase view", input.GetModifierKey())
 	footerPad := 6
 	if settings.Type == 2 {
 		footerPad = 9
 	}
-	content.WriteString(RenderFooter(m, footerPad, statusMsg))
+	content.WriteString(RenderFooterWithThreeLineStatus(m, footerPad, statusMsg))
 
 	// Apply container padding
 	return containerStyle.Render(content.String())

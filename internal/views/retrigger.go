@@ -177,9 +177,9 @@ func RenderRetriggerView(m *model.Model) string {
 	content.WriteString(probabilityRow)
 	content.WriteString("\n\n")
 
-	// Footer with status
+	// Footer with three-line status
 	statusMsg := fmt.Sprintf("Up/Down: Navigate | %s+Arrow: Adjust values | Shift+Left: Back to Phrase view", input.GetModifierKey())
-	content.WriteString(RenderFooter(m, 13, statusMsg))
+	content.WriteString(RenderFooterWithThreeLineStatus(m, 13, statusMsg))
 
 	// Apply container padding
 	return containerStyle.Render(content.String())

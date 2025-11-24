@@ -180,23 +180,22 @@ func RenderHeader(m *model.Model, leftContent, rightContent string) string {
 	return content.String()
 }
 
-// RenderFooter handles the common pattern of filling remaining space and adding status
-// getNavigationInfo returns the shift-up and shift-down navigation labels for a view
+// getNavigationInfo returns the Shift+Up and Shift+Down navigation labels for a view
 func getNavigationInfo(viewMode types.ViewMode) (shiftUp, shiftDown string) {
 	switch viewMode {
 	case types.SongView, types.ChainView, types.PhraseView:
 		return "B", "M" // Settings (BPM) and Mixer
 	case types.SettingsView:
-		return "", "" // Shift-down goes back to previous view, but we don't show it
+		return "", "" // Shift+Down goes back to previous view, but we don't show it
 	case types.MixerView:
-		return "", "" // Shift-up goes back to previous view, but we don't show it
+		return "", "" // Shift+Up goes back to previous view, but we don't show it
 	case types.RetriggerView, types.TimestrechView, types.ModulateView,
 		types.ArpeggioView, types.MidiView, types.SoundMakerView, types.DuckingView:
-		return "", "" // These are sub-views of Phrase, shift-left goes back
+		return "", "" // These are sub-views of Phrase, Shift+Left goes back
 	case types.FileView:
-		return "", "" // File browser, shift-left goes back to phrase
+		return "", "" // File browser, Shift+Left goes back to phrase
 	case types.FileMetadataView:
-		return "", "" // Metadata view, shift-down goes back to file view
+		return "", "" // Metadata view, Shift+Down goes back to file view
 	case types.WaveformView:
 		return "", "" // Waveform view
 	default:
@@ -288,24 +287,6 @@ func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 strin
 		line3 += strings.Repeat(" ", spacing) + helpLine3
 	}
 	content.WriteString(statusStyle.Render(line3))
-
-	return content.String()
-}
-
-func RenderFooter(m *model.Model, contentLines int, statusMsg string) string {
-	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	var content strings.Builder
-
-	// Fill remaining space if terminal is larger
-	// Adjust for 3 status lines instead of 1
-	if m.TermHeight > 0 && contentLines < m.TermHeight-6 { // -6 for container padding + 3 status lines
-		for i := contentLines; i < m.TermHeight-6; i++ {
-			content.WriteString("\n")
-		}
-	}
-
-	// Status message (legacy - will be replaced with three-line status)
-	content.WriteString(statusStyle.Render(statusMsg))
 
 	return content.String()
 }
