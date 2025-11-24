@@ -63,6 +63,9 @@ type Model struct {
 	LastEditRow           int            // Track the last row that was edited
 	BPM                   float32        // Beats per minute
 	PPQ                   int            // Pulses per quarter note
+	// Timing tracking for drift-free playback
+	PlaybackStartTime     time.Time      // Absolute time when playback started
+	PlaybackTickCount     int            // Number of ticks since playback started
 	PregainDB             float32        // Pre-gain in decibels (-96.0 to +32.0, default 0.0)
 	PostgainDB            float32        // Post-gain in decibels (-96.0 to +32.0, default 0.0)
 	BiasDB                float32        // Bias in decibels (-96.0 to +32.0, default -6.0)

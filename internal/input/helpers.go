@@ -1634,6 +1634,11 @@ func stopPlayback(m *model.Model) {
 func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 	m.IsPlaying = true
 	m.PlaybackMode = config.Mode
+	
+	// Initialize timing tracking for drift-free playback
+	m.PlaybackStartTime = time.Now()
+	m.PlaybackTickCount = 0
+	log.Printf("TIMING: Playback started at %v", m.PlaybackStartTime)
 
 	// Initialize increment counters to -1 for all tracks/phrases/rows
 	for track := 0; track < 8; track++ {
@@ -1824,6 +1829,11 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 
 // startPlaybackWithConfigFromCtrlSpace is specialized for Ctrl+Space recording context
 func startPlaybackWithConfigFromCtrlSpace(m *model.Model, config PlaybackConfig) tea.Cmd {
+	// Initialize timing tracking for drift-free playback
+	m.PlaybackStartTime = time.Now()
+	m.PlaybackTickCount = 0
+	log.Printf("TIMING: Playback started at %v (from Ctrl+Space)", m.PlaybackStartTime)
+	
 	// Initialize increment counters to -1 for all tracks/phrases/rows
 	for track := 0; track < 8; track++ {
 		for phrase := 0; phrase < 255; phrase++ {
