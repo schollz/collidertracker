@@ -203,23 +203,7 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 		highlightPosition = 4 // P is at position 4 (S-C-P)
 		
 	case types.SettingsView:
-		// Settings (Options) view: O is current, align with where we came from
-		// Determine position based on PreviousView
-		switch m.PreviousView {
-		case types.SongView:
-			highlightPosition = 0 // S is at position 0
-		case types.ChainView:
-			highlightPosition = 2 // C is at position 2 (S-C)
-		case types.PhraseView:
-			highlightPosition = 4 // P is at position 4 (S-C-P)
-		default:
-			highlightPosition = 0 // Default to S position
-		}
-		topLabel = "" // No label above (we're at Options)
-		bottomLabel = "M"
-		
-	case types.MixerView:
-		// Mixer view: M is current, align with where we came from
+		// Settings (Options) view: O above, S-C-P in middle, M below
 		// Determine position based on PreviousView
 		switch m.PreviousView {
 		case types.SongView:
@@ -232,7 +216,23 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 			highlightPosition = 0 // Default to S position
 		}
 		topLabel = "O"
-		bottomLabel = "" // No label below (we're at Mixer)
+		bottomLabel = "M"
+		
+	case types.MixerView:
+		// Mixer view: O above, S-C-P in middle, M below
+		// Determine position based on PreviousView
+		switch m.PreviousView {
+		case types.SongView:
+			highlightPosition = 0 // S is at position 0
+		case types.ChainView:
+			highlightPosition = 2 // C is at position 2 (S-C)
+		case types.PhraseView:
+			highlightPosition = 4 // P is at position 4 (S-C-P)
+		default:
+			highlightPosition = 0 // Default to S position
+		}
+		topLabel = "O"
+		bottomLabel = "M"
 		
 	case types.FileView:
 		// File browser: D above F
