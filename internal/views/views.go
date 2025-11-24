@@ -181,58 +181,68 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	// - D (File Metadata) appears above File browser
 	var topLabel string
 	var bottomLabel string
+	var highlightPosition int // Position of the highlighted character (0-based)
 	
 	switch m.ViewMode {
 	case types.SongView:
-		// Song view: O above, M below
+		// Song view: O above S, M below S
 		topLabel = "O"
 		bottomLabel = "M"
+		highlightPosition = 0 // S is at position 0
 		
 	case types.ChainView:
-		// Chain view: O above, M below
+		// Chain view: O above C, M below C
 		topLabel = "O"
 		bottomLabel = "M"
+		highlightPosition = 2 // C is at position 2 (S-C)
 		
 	case types.PhraseView:
-		// Phrase view: O above, M below
+		// Phrase view: O above P, M below P
 		topLabel = "O"
 		bottomLabel = "M"
+		highlightPosition = 4 // P is at position 4 (S-C-P)
 		
 	case types.SettingsView:
-		// Settings (Options) view: nothing above, M below
-		topLabel = ""
+		// Settings (Options) view: O is current, show S-C-P above it with M below
+		topLabel = "S-C-P" // Show full navigation path above
 		bottomLabel = "M"
+		highlightPosition = 0 // O will be on line 2, position 0
 		
 	case types.MixerView:
-		// Mixer view: O above, nothing below
-		topLabel = "O"
+		// Mixer view: M is current, show S-C-P and O above it
+		topLabel = "S-C-P" // Show full navigation path
 		bottomLabel = ""
+		highlightPosition = 0 // M will be on line 2, position 0
 		
 	case types.FileView:
-		// File browser: D (File Metadata) above, nothing below
+		// File browser: D above F
 		topLabel = "D"
 		bottomLabel = ""
+		highlightPosition = 6 // F is at position 6 (S-C-P-F)
 		
 	case types.FileMetadataView:
-		// File Metadata view: nothing above, nothing below (goes back to File browser with Shift+Down)
+		// File Metadata view: nothing above/below
 		topLabel = ""
 		bottomLabel = ""
+		highlightPosition = 8 // D is at position 8 (S-C-P-F-D)
 		
 	case types.RetriggerView, types.TimestrechView, types.ModulateView, 
 		types.ArpeggioView, types.MidiView, types.SoundMakerView, types.DuckingView:
-		// Sub-views from Phrase: O above, M below
+		// Sub-views from Phrase: O above sub-view, M below
 		topLabel = "O"
 		bottomLabel = "M"
+		highlightPosition = 6 // Sub-view character is at position 6 (S-C-P-X)
 		
 	default:
 		topLabel = ""
 		bottomLabel = ""
+		highlightPosition = 0
 	}
 	
-	// Build the 3 lines
-	// Line 1: Top label (O, D, or empty)
+	// Build the 3 lines with proper alignment
+	// Line 1: Top label aligned with the highlighted character
 	if topLabel != "" {
-		line1 = "  " + dimStyle.Render(topLabel)
+		line1 = strings.Repeat(" ", highlightPosition) + dimStyle.Render(topLabel)
 	} else {
 		line1 = ""
 	}
@@ -240,9 +250,9 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	// Line 2: Current view path (S-C-P or variations)
 	line2 = buildNavigationChain(m, highlightStyle, dimStyle, helpText)
 	
-	// Line 3: Bottom label (M or empty)
+	// Line 3: Bottom label aligned with the highlighted character
 	if bottomLabel != "" {
-		line3 = "  " + dimStyle.Render(bottomLabel)
+		line3 = strings.Repeat(" ", highlightPosition) + dimStyle.Render(bottomLabel)
 	} else {
 		line3 = ""
 	}
@@ -302,11 +312,11 @@ func buildNavigationChain(m *model.Model, highlightStyle, dimStyle lipgloss.Styl
 		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("D")
 		
 	case types.SettingsView:
-		// Just O highlighted (standalone)
+		// Settings view: O highlighted (S-C-P shown on line above)
 		chain = highlightStyle.Render("O")
 		
 	case types.MixerView:
-		// Just M highlighted (standalone)
+		// Mixer view: M highlighted (S-C-P shown on line above)
 		chain = highlightStyle.Render("M")
 		
 	case types.FileMetadataView:
@@ -374,9 +384,19 @@ func RenderFooter(m *model.Model, contentLines int, helpText string, statusMsg s
 	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	var content strings.Builder
 
+	// Calculate how many lines the navigation and status will take
+	navLines := 3 // Navigation always takes 3 lines
+	statusLines := 0
+	if statusMsg != "" {
+		statusLines = 1
+	}
+	footerLines := navLines + statusLines
+	
 	// Fill remaining space if terminal is larger
-	if m.TermHeight > 0 && contentLines < m.TermHeight-4 { // -4 for container padding
-		for i := contentLines; i < m.TermHeight-4; i++ {
+	// Account for container padding (4) and footer lines
+	maxContentLines := m.TermHeight - 4 - footerLines
+	if m.TermHeight > 0 && contentLines < maxContentLines {
+		for i := contentLines; i < maxContentLines; i++ {
 			content.WriteString("\n")
 		}
 	}
