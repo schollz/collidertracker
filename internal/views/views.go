@@ -344,32 +344,14 @@ func buildNavigationChain(m *model.Model, highlightStyle, dimStyle lipgloss.Styl
 		chain = dimStyle.Render("S-C-P-") + highlightStyle.Render("D")
 		
 	case types.SettingsView:
-		// Settings view: Show S-C-P with appropriate letter highlighted from PreviousView
-		switch m.PreviousView {
-		case types.SongView:
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
-		case types.ChainView:
-			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P")
-		case types.PhraseView:
-			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P")
-		default:
-			// Default to S highlighted
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
-		}
+		// Settings view: Show S-C-P all dimmed (no highlighting in chain)
+		// Only the O label is highlighted
+		chain = dimStyle.Render("S-C-P")
 		
 	case types.MixerView:
-		// Mixer view: Show S-C-P with appropriate letter highlighted from PreviousView
-		switch m.PreviousView {
-		case types.SongView:
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
-		case types.ChainView:
-			chain = dimStyle.Render("S-") + highlightStyle.Render("C") + dimStyle.Render("-P")
-		case types.PhraseView:
-			chain = dimStyle.Render("S-C-") + highlightStyle.Render("P")
-		default:
-			// Default to S highlighted
-			chain = highlightStyle.Render("S") + dimStyle.Render("-C-P")
-		}
+		// Mixer view: Show S-C-P all dimmed (no highlighting in chain)
+		// Only the M label is highlighted
+		chain = dimStyle.Render("S-C-P")
 		
 	case types.FileMetadataView:
 		// S-C-P-F-D with D highlighted (File Metadata from File browser)
