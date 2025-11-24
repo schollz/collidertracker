@@ -198,16 +198,7 @@ func restartWithProject() {
 		}
 	})
 	// Build program
-	tm = initialModel(config.port, config.project, config.vim, d, config.dump)
-
-	// Close dump file when function exits
-	if tm.dumpFile != nil {
-		defer func() {
-			if err := tm.dumpFile.Close(); err != nil {
-				log.Printf("Error closing dump file: %v", err)
-			}
-		}()
-	}
+	tm = initialModel(config.port, config.project, config.vim, d)
 
 	p := tea.NewProgram(tm, tea.WithAltScreen())
 
@@ -450,16 +441,7 @@ func runColliderTracker(cmd *cobra.Command, args []string) {
 		}
 	})
 	// Build program
-	tm = initialModel(config.port, config.project, config.vim, d, config.dump)
-
-	// Close dump file when function exits
-	if tm.dumpFile != nil {
-		defer func() {
-			if err := tm.dumpFile.Close(); err != nil {
-				log.Printf("Error closing dump file: %v", err)
-			}
-		}()
-	}
+	tm = initialModel(config.port, config.project, config.vim, d)
 
 	p := tea.NewProgram(tm, tea.WithAltScreen())
 
