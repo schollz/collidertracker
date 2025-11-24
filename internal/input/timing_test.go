@@ -124,3 +124,21 @@ func TestRowDurationCalculation(t *testing.T) {
 			tc.bpm, tc.ppq, tc.expected, duration)
 	}
 }
+
+// BenchmarkTimingAccuracy measures the actual drift that would occur over many ticks
+func BenchmarkTimingAccuracy(b *testing.B) {
+	m := model.NewModel(0, "", false)
+	m.BPM = 120.0 // 2 beats per second
+	m.PPQ = 2     // 2 pulses per quarter note = 4 ticks per second
+	
+	m.PlaybackStartTime = time.Now()
+	m.PlaybackTickCount = 0
+	
+	// Simulate a high number of ticks
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.PlaybackTickCount++
+		us := rowDurationMicroseconds(m)
+		_ = m.PlaybackStartTime.Add(time.Duration(float64(m.PlaybackTickCount) * us * 1000))
+	}
+}
