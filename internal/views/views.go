@@ -180,9 +180,42 @@ func RenderHeader(m *model.Model, leftContent, rightContent string) string {
 	return content.String()
 }
 
+// getShiftRightDestination returns the Shift+Right navigation label for Phrase view based on current column
+func getShiftRightDestination(m *model.Model) string {
+	if m.ViewMode != types.PhraseView {
+		return ""
+	}
+
+	// Get column mapping to determine what data column we're on
+	columnMapping := m.GetColumnMapping(m.CurrentCol)
+	if columnMapping == nil {
+		return "F" // Default to File view
+	}
+
+	// Check which data column we're on and return appropriate indicator
+	switch columnMapping.DataColumnIndex {
+	case int(types.ColRetrigger):
+		return "R" // Retrigger view
+	case int(types.ColTimestretch):
+		return "T" // Timestretch view
+	case int(types.ColModulate):
+		return "O" // Modulate view (O for mOdulate)
+	case int(types.ColArpeggio):
+		return "A" // Arpeggio view
+	case int(types.ColMidi):
+		return "I" // MIDI view (I for mIdI)
+	case int(types.ColSoundMaker):
+		return "S" // SoundMaker view
+	case int(types.ColEffectDucking):
+		return "D" // Ducking view
+	default:
+		return "F" // File view (default for most columns)
+	}
+}
+
 // getNavigationInfo returns the Shift+Up and Shift+Down navigation labels for a view
-func getNavigationInfo(viewMode types.ViewMode) (shiftUp, shiftDown string) {
-	switch viewMode {
+func getNavigationInfo(m *model.Model) (shiftUp, shiftDown string) {
+	switch m.ViewMode {
 	case types.SongView, types.ChainView, types.PhraseView:
 		return "B", "M" // Settings (BPM) and Mixer
 	case types.SettingsView:
@@ -204,14 +237,15 @@ func getNavigationInfo(viewMode types.ViewMode) (shiftUp, shiftDown string) {
 }
 
 // getCurrentViewIndicator returns the S-C-P indicator with current view highlighted
-func getCurrentViewIndicator(viewMode types.ViewMode) string {
+// and appends Shift+Right destination if in Phrase view
+func getCurrentViewIndicator(m *model.Model) string {
 	highlightStyle := lipgloss.NewStyle().Background(lipgloss.Color("7")).Foreground(lipgloss.Color("0"))
 	normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 
 	var s, c, p string
 
 	// Determine which is highlighted
-	switch viewMode {
+	switch m.ViewMode {
 	case types.SongView:
 		s = highlightStyle.Render("S")
 		c = normalStyle.Render("C")
@@ -231,7 +265,17 @@ func getCurrentViewIndicator(viewMode types.ViewMode) string {
 		p = normalStyle.Render("P")
 	}
 
-	return s + "-" + c + "-" + p
+	scpIndicator := s + "-" + c + "-" + p
+
+	// If in Phrase view, append Shift+Right destination
+	if m.ViewMode == types.PhraseView {
+		shiftRightDest := getShiftRightDestination(m)
+		if shiftRightDest != "" {
+			scpIndicator += "-" + normalStyle.Render(shiftRightDest)
+		}
+	}
+
+	return scpIndicator
 }
 
 // calculateSpacingForHelpText calculates the spacing needed between indicator and help text
@@ -247,8 +291,8 @@ func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 strin
 	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	var content strings.Builder
 
-	shiftUp, shiftDown := getNavigationInfo(m.ViewMode)
-	scpIndicator := getCurrentViewIndicator(m.ViewMode)
+	shiftUp, shiftDown := getNavigationInfo(m)
+	scpIndicator := getCurrentViewIndicator(m)
 
 	// Minimum spacing between navigation indicator and help text
 	const minSpacing = 10
@@ -265,8 +309,13 @@ func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 strin
 	// Line 2: S-C-P indicator + help text
 	line2 := scpIndicator
 	if helpLine2 != "" {
-		// Calculate raw length without ANSI codes (S-C-P = 5 characters: 1+1+1+2 dashes)
+		// Calculate raw length without ANSI codes
+		// For phrase view with shift-right: "S-C-P-X" = 7 characters
+		// For other views: "S-C-P" = 5 characters
 		rawSCPLen := len("S-C-P")
+		if m.ViewMode == types.PhraseView {
+			rawSCPLen = len("S-C-P-X") // Account for the extra character
+		}
 		spacing := calculateSpacingForHelpText(rawSCPLen, minSpacing)
 		line2 += statusStyle.Render(strings.Repeat(" ", spacing) + helpLine2)
 	}
