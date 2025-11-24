@@ -1175,7 +1175,7 @@ Routine{
     				keepSearching = false;
     			});
     		});
-    		["track",track,"noteOn",noteOn,"notes",notes].postln;
+    		// ["track",track,"noteOn",noteOn,"notes",notes].postln;
     		// create a new dictionary if it doesn't exist
     		if (~synthsPlaying.at(track).isNil,{
     			~synthsPlaying.put(track, Dictionary.new());
@@ -1187,7 +1187,7 @@ Routine{
 					arg syn;
 					if (syn.isPlaying, {
 						if (syn.notNil,{
-							[syn,"stopped"].postln;
+							// [syn,"stopped"].postln;
 							syn.set(\gate,0);
 						});
 					});
@@ -1209,7 +1209,7 @@ Routine{
     			dict.putPairs(msg.copyToEnd(nonNoteIndex));
     			// round numbers to 1/128 in place
     			dict.keysValuesChange { |k, v|
-    				[k,v].postln;
+    				// [k,v].postln;
     				if (v.isNumber) { v.round(1.0/128.0) } { v }
     			};
 
@@ -1235,22 +1235,22 @@ Routine{
     				var synthArgs = args ++ [\note,n,\noteSize,notes.size];
     				var synthName = synName ++ "_" ++ n.asString;
     				// print out all the synthargs
-    				synthArgs.do({ arg a,i; [i,a].postln; });
+    				// synthArgs.do({ arg a,i; [i,a].postln; });
 					// if monophonic check to see if there is a synth playing just use that instead
 					if (monophonic, {
 						var playingSynth = ~synthsPlaying.at(track).values.detect { |syn| syn.notNil and: { syn.isPlaying } };
-						["monophonic", playingSynth].postln;	
+						// ["monophonic", playingSynth].postln;	
 						if (playingSynth.notNil, {
-							["reused", playingSynth].postln;
+							// ["reused", playingSynth].postln;
 							playingSynth.set(*synthArgs);
 							^nil;
 						});
 					});
 					// play new synth
-					["playing",synthName].postln;
+					// ["playing",synthName].postln;
     				~synthsPlaying.at(track).put(synthName,
     					Synth.head(targetGroup,synthToPlay,synthArgs).onFree({
-    						[synthName,"freed"].postln;
+    						// [synthName,"freed"].postln;
     						~synthsPlaying.at(track).removeAt(synthName);
     					});
     				);
@@ -1278,7 +1278,7 @@ Routine{
     		dict.putPairs(msg.copyToEnd(3));
     		// round numbers to 1/128 in place
     		dict.keysValuesChange { |k, v|
-    			[k,v].postln;
+    			// [k,v].postln;
     		    if (v.isNumber) { v.round(1.0/128.0) } { v }
     		};
 
@@ -1317,17 +1317,17 @@ Routine{
     		    // play new synth
     		    ~samplesPlaying.at(track).put(synName,
     		        Synth.head(targetGroup, "sampler" ++ (b.numChannels), dict.asPairs).onFree({
-    		            [b, "freed"].postln;
+    		            // [b, "freed"].postln;
     		            ~samplesPlaying.at(track).removeAt(synName);
     		        })
     		    );
-    		    ["played",~samplesPlaying.at(track).at(synName)].postln;
+    		    // ["played",~samplesPlaying.at(track).at(synName)].postln;
     		    NodeWatcher.register(~samplesPlaying.at(track).at(synName));
     		} {
     		    // set all synths
     		    ~samplesPlaying.at(track).values.do { |syn|
     		        if (syn.notNil and: { syn.isPlaying }) {
-    		        	["updating",syn].postln;
+    		        	// ["updating",syn].postln;
     		            syn.set(*dict.asPairs);
     		        }
     		    };
@@ -1336,15 +1336,15 @@ Routine{
 
     	OSCFunc({ |msg|
     		var filename = msg[1];
-    		msg.postln;
+    		// msg.postln;
 			// log every key/value pair
 			msg.do({ |v,i|
-				[i,v].postln;
+				// [i,v].postln;
 			});
     		if (~sampleCache.at(filename).isNil,{
     			// load sample
     			~sampleCache.put(filename, Buffer.read(s,filename,action:{ |b|
-    				["loaded",b,b.numChannels].postln;
+    				// ["loaded",b,b.numChannels].postln;
     				~playFromMsg.(msg,b);
     			}));
     		},{
@@ -1397,16 +1397,16 @@ Routine{
     			});
     			// print all settings
     			settings.keysValuesDo({ |k,v|
-    				[k,v].postln;
+    				// [k,v].postln;
     			});
     			// normalize velocity (0-127) and add to track volume
     			if (settings.at("velocity").notNil,{
     				settings.put("trackVolume", settings.at("trackVolume") + settings.at("velocity").min(127).max(0).linlin(0,127,-24,24));
     			});
-    			["playing DX7"].postln;
+    			// ["playing DX7"].postln;
     			notes.do({ |n|
     				settings.put("note",n);
-    				["note",n].postln;
+    				// ["note",n].postln;
     				~dx7syn.value(
     					settings.at("set"),
     					settings.at("k"),
@@ -1450,7 +1450,7 @@ Routine{
     		// stop playback synth if it exists
     		if (~synthPlayback.notNil,{
     			if (~synthPlayback.isPlaying,{
-    				[~synthPlayback,"stopped"].postln;
+    				// [~synthPlayback,"stopped"].postln;
     				~synthPlayback.set(\gate,0);
     			});
     		});
@@ -1459,7 +1459,8 @@ Routine{
     		NetAddr.new("127.0.0.1", 57121).sendMsg("/waveform", msg[3]);
     	},'/waveform');
 		OSCFunc({ |msg|
-			NetAddr.new("127.0.0.1", 57121).sendMsg("/sampler_playhead", *msg[3..].postln);
+			// NetAddr.new("127.0.0.1", 57121).sendMsg("/sampler_playhead", *msg[3..].postln);
+		NetAddr.new("127.0.0.1", 57121).sendMsg("/sampler_playhead", *msg[3..]);
 		},'/sampler_playhead');
     	OSCFunc({ |msg|
     		NetAddr.new("127.0.0.1", 57121).sendMsg("/track_volume", *msg[3..]);
@@ -1472,13 +1473,13 @@ Routine{
     		var doRecord = msg[2].asInteger;
     		var enabledTracks = msg[3].asInteger;
     		var isTrackEnabled = { arg trackNum; (enabledTracks.bitAnd((2**trackNum).asInteger)) > 0 };
-    		[filename,doRecord,enabledTracks,isTrackEnabled].postln;
+    		// [filename,doRecord,enabledTracks,isTrackEnabled].postln;
     		// stop all recordings
-    		["stopping all recordings"].postln;
+    		// ["stopping all recordings"].postln;
     		~synthRecord.values.do({ |syn,name|
-    			[syn,name,"stopping"].postln;
+    			// [syn,name,"stopping"].postln;
     			if (syn.notNil and: { syn.isPlaying }, {
-    				[syn,"stopped"].postln;
+    				// [syn,"stopped"].postln;
     				syn.set(\gate,0);
     			});
     		});
@@ -1489,14 +1490,14 @@ Routine{
     			// start a recording
     			var recordingBuffer=Buffer.alloc(Server.default,65536,2);
     			var pathname=filename;
-    			["starting recording",filename,"with track mask",enabledTracks.asBinaryString].postln;
+    			// ["starting recording",filename,"with track mask",enabledTracks.asBinaryString].postln;
     			recordingBuffer.write(pathname.standardizePath,PathName.new(pathname.standardizePath).extension,"int16",0,0,true);
     			~synthRecord.put(filename,Synth.tail(s,"diskout",[
     				\bufnum,recordingBuffer.bufnum,
     				\inbus,~busDisk,
     				\gate,1,
     			]).onFree({
-    				[recordingBuffer,"freed"].postln;
+    				// [recordingBuffer,"freed"].postln;
     				recordingBuffer.free;
     			}));
     			NodeWatcher.register(~synthRecord.at(filename));
@@ -1506,19 +1507,19 @@ Routine{
     				if (enabled, {
     					var trackRecordingBuffer=Buffer.alloc(Server.default,65536,2);
     					var trackPathname=filename.asString.replace(".wav","_track"++track.asString++".wav");
-    					["starting track recording for track",track,trackPathname].postln;
+    					// ["starting track recording for track",track,trackPathname].postln;
     					trackRecordingBuffer.write(trackPathname.standardizePath,PathName.new(trackPathname.standardizePath).extension,"int16",0,0,true);
     					~synthRecord.put("track"++track.asString,Synth.tail(s,"diskout",[
     						\bufnum,trackRecordingBuffer.bufnum,
     						\inbus,~busTrack[track],
     						\gate,1,
     					]).onFree({
-    						[trackRecordingBuffer,"freed"].postln;
+    						// [trackRecordingBuffer,"freed"].postln;
     						trackRecordingBuffer.free;
     					}));
     					NodeWatcher.register(~synthRecord.at("track"++track.asString));
     				}, {
-    					["skipping track",track,"(not enabled in mask)"].postln;
+    					// ["skipping track",track,"(not enabled in mask)"].postln;
     				});
     			});
     		});
@@ -1526,10 +1527,10 @@ Routine{
     	OSCFunc({ |msg|
     		var filename = msg[1];
     		var gate = msg[2].asInteger;
-    		msg.postln;
+    		// msg.postln;
     		if (~synthPlayback.notNil,{
     			if (~synthPlayback.isPlaying,{
-    				[~synthPlayback,"stopped"].postln;
+    				// [~synthPlayback,"stopped"].postln;
     				~synthPlayback.set(\gate,0);
     			});
     		});
@@ -1540,7 +1541,7 @@ Routine{
     					\out,~busDry,
     					\gate,1,
     				]).onFree({
-    					[b,"freed"].postln;
+    					// [b,"freed"].postln;
     					b.free;
     				});
     				NodeWatcher.register(~synthPlayback);
@@ -1548,16 +1549,16 @@ Routine{
     		});
     	},'/playback');
     	OSCFunc({ |msg|
-    		["setting",msg[1],msg[2]].postln;
+    		// ["setting",msg[1],msg[2]].postln;
     		~synOut.set(msg[1],msg[2]);
     	},'/set');
     	OSCFunc({ |msg|
-    		["/set_track",msg[1],msg[2],msg[3]].postln;
+    		// ["/set_track",msg[1],msg[2],msg[3]].postln;
     		if (~synthsPlaying.at(msg[1].asInteger).notNil,{
     			~synthsPlaying.at(msg[1].asInteger).values.do({ arg syn;
     				if (syn.isPlaying,{
     					if (syn.notNil,{
-    						[syn,"setting",msg[2],msg[3]].postln;
+    						// [syn,"setting",msg[2],msg[3]].postln;
     						syn.set(msg[2].asString,msg[3]);
     					});
     				});
@@ -1565,7 +1566,7 @@ Routine{
     		});
     	},'/set_track');
 
-    	["loaded",NetAddr.langPort, NetAddr.localAddr].postln;
+    	// ["loaded",NetAddr.langPort, NetAddr.localAddr].postln;
 
     	s.sync;
     	Routine {
@@ -1578,7 +1579,7 @@ Routine{
 
 
     	//Server.default.record;
-    	["playing startupSound"].postln;
+    	// ["playing startupSound"].postln;
     	 Synth.head(Server.default,"startupSound",[\out,~busDry]);
     	// [48,64,67,72].do({ |n|
     	// 	Synth.head(Server.default,"SuperSaw",[
