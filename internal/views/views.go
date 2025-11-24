@@ -187,18 +187,18 @@ func getNavigationInfo(viewMode types.ViewMode) (shiftUp, shiftDown string) {
 	case types.SongView, types.ChainView, types.PhraseView:
 		return "B", "M" // Settings (BPM) and Mixer
 	case types.SettingsView:
-		return "", "S-C-P" // Only shift-down goes back
+		return "", "" // Shift-down goes back to previous view, but we don't show it
 	case types.MixerView:
-		return "S-C-P", "" // Only shift-up goes back
+		return "", "" // Shift-up goes back to previous view, but we don't show it
 	case types.RetriggerView, types.TimestrechView, types.ModulateView,
 		types.ArpeggioView, types.MidiView, types.SoundMakerView, types.DuckingView:
-		return "", "P" // These are sub-views of Phrase, shift-left goes back
+		return "", "" // These are sub-views of Phrase, shift-left goes back
 	case types.FileView:
-		return "", "P" // File browser, shift-left goes back to phrase
+		return "", "" // File browser, shift-left goes back to phrase
 	case types.FileMetadataView:
-		return "", "F" // Metadata view, shift-down goes back to file view
+		return "", "" // Metadata view, shift-down goes back to file view
 	case types.WaveformView:
-		return "", "P" // Waveform view
+		return "", "" // Waveform view
 	default:
 		return "", ""
 	}
