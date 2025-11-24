@@ -68,7 +68,7 @@ func TestTimingDriftLongDuration(t *testing.T) {
 	for _, tickNum := range checkPoints {
 		// Calculate expected absolute time for this tick using absolute scheduling
 		us := rowDurationMicroseconds(m)
-		expectedTime := m.PlaybackStartTime.Add(time.Duration(float64(tickNum) * us * 1000))
+		expectedTime := m.PlaybackStartTime.Add(time.Duration(float64(tickNum) * us * nanosecondsPerMicrosecond))
 		
 		// Calculate what the expected time would be using simple multiplication
 		// This represents the "ideal" time if there was no drift
@@ -144,6 +144,6 @@ func BenchmarkTimingAccuracy(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		m.PlaybackTickCount++
 		us := rowDurationMicroseconds(m)
-		_ = m.PlaybackStartTime.Add(time.Duration(float64(m.PlaybackTickCount) * us * 1000))
+		_ = m.PlaybackStartTime.Add(time.Duration(float64(m.PlaybackTickCount) * us * nanosecondsPerMicrosecond))
 	}
 }
