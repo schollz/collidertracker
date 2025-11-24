@@ -483,6 +483,9 @@ func AdvancePlayback(m *model.Model) {
 			// Load new ticks for the advanced row
 			m.LoadTicksLeftForTrack(track)
 
+			// Preload upcoming samples to avoid timing pauses (scan 8 rows ahead)
+			m.PreloadUpcomingSamples(track, 8)
+
 			// Emit the newly advanced row immediately (at start of its DT period)
 			phraseNum := m.SongPlaybackPhrase[track]
 			currentRow := m.SongPlaybackRowInPhrase[track]

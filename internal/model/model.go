@@ -233,6 +233,15 @@ func (m *Model) GetCurrentPhrasesFiles() *[]string {
 	return &m.SamplerPhrasesFiles
 }
 
+// GetPhrasesFilesForTrack returns the appropriate phrases files based on track type
+func (m *Model) GetPhrasesFilesForTrack(track int) *[]string {
+	// Instruments don't use files
+	if track >= 0 && track < 8 && !m.TrackTypes[track] {
+		return nil
+	}
+	return &m.SamplerPhrasesFiles
+}
+
 // GetChainsDataForTrack returns the appropriate chains data based on track type
 // Used by Song view to check chain contents across different tracks
 func (m *Model) GetChainsDataForTrack(track int) *[][]int {
@@ -2127,6 +2136,30 @@ func (m *Model) SendOSCRecordMessage(filename string, recording bool, trackMask 
 	m.sendOSCMessage(config)
 }
 
+// SendOSCPreloadMessage sends a preload request to SuperCollider to load a buffer in the background
+// This allows samples to be loaded before they're needed, avoiding timing pauses
+func (m *Model) SendOSCPreloadMessage(filename string) {
+	if m.oscClient == nil {
+		return // OSC not configured
+	}
+
+	// Convert filename to absolute path for SuperCollider
+	absolutePath, err := filepath.Abs(filename)
+	if err != nil {
+		log.Printf("Error converting filename to absolute path: %v", err)
+		absolutePath = filename // fallback to original filename
+	}
+
+	config := OSCMessageConfig{
+		Address:    "/preload",
+		Parameters: []interface{}{absolutePath},
+		LogFormat:  "OSC preload message sent: /preload '%s'",
+		LogArgs:    []interface{}{absolutePath},
+	}
+
+	m.sendOSCMessage(config)
+}
+
 func (m *Model) GenerateRecordingFilename() string {
 	now := time.Now()
 	return fmt.Sprintf("%04d-%02d-%02d-%02d-%02d-%02d.wav",
@@ -2278,6 +2311,53 @@ func (m *Model) LoadTicksLeftForTrack(track int) {
 		// Set to dtValue so the row plays for exactly DT ticks
 		// The playback logic will decrement on the LAST tick and then advance
 		m.SongPlaybackTicksLeft[track] = dtValue
+	}
+}
+
+// PreloadUpcomingSamples scans ahead in the current playback to find samples
+// that will be needed soon and sends preload requests to SuperCollider
+func (m *Model) PreloadUpcomingSamples(track int, lookaheadRows int) {
+	if track < 0 || track >= 8 {
+		return
+	}
+	
+	// Only preload for sampler tracks
+	if m.TrackTypes[track] == false { // false = Instrument
+		return
+	}
+
+	phraseNum := m.SongPlaybackPhrase[track]
+	if phraseNum < 0 || phraseNum >= 255 {
+		return
+	}
+
+	startRow := m.SongPlaybackRowInPhrase[track]
+	if startRow < 0 || startRow >= 255 {
+		return
+	}
+
+	phrasesData := m.GetPhrasesDataForTrack(track)
+	phrasesFiles := m.GetPhrasesFilesForTrack(track)
+	if phrasesData == nil || phrasesFiles == nil {
+		return
+	}
+
+	// Scan ahead up to lookaheadRows rows in the phrase
+	preloadedFiles := make(map[string]bool)
+	for i := 0; i < lookaheadRows && (startRow+i) < 255; i++ {
+		row := startRow + i
+		fileIndex := (*phrasesData)[phraseNum][row][types.ColFilename]
+		
+		// Check if this row has a file and DT > 0 (playable)
+		dtValue := (*phrasesData)[phraseNum][row][types.ColDeltaTime]
+		if fileIndex >= 0 && fileIndex < len(*phrasesFiles) && dtValue > 0 {
+			filename := (*phrasesFiles)[fileIndex]
+			if filename != "" && !preloadedFiles[filename] {
+				m.SendOSCPreloadMessage(filename)
+				preloadedFiles[filename] = true
+				log.Printf("Preloading sample for track %d: %s (lookahead %d rows)", track, filename, i)
+			}
+		}
 	}
 }
 

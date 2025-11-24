@@ -1143,6 +1143,7 @@ Routine{
     	);
     	s.sync;
     	~sampleCache = Dictionary.new();
+    	~sampleLoadingQueue = Dictionary.new(); // Track which samples are currently being loaded
 
 
     	~playSynthFromMsg = {
@@ -1342,15 +1343,51 @@ Routine{
 				[i,v].postln;
 			});
     		if (~sampleCache.at(filename).isNil,{
-    			// load sample
-    			~sampleCache.put(filename, Buffer.read(s,filename,action:{ |b|
-    				["loaded",b,b.numChannels].postln;
-    				~playFromMsg.(msg,b);
-    			}));
+    			// Check if already loading this sample
+    			if (~sampleLoadingQueue.at(filename).isNil, {
+    				// Start loading sample asynchronously - mark as loading
+    				["starting async load of", filename].postln;
+    				~sampleLoadingQueue.put(filename, true);
+    				
+    				// Use Buffer.readNoUpdate for non-blocking load
+    				// This returns immediately and calls action when done
+    				~sampleCache.put(filename, Buffer.read(s, filename, action: { |b|
+    					["loaded", b, b.numChannels].postln;
+    					// Remove from loading queue
+    					~sampleLoadingQueue.removeAt(filename);
+    					// Don't play here - let the next message trigger playback
+    					// This avoids blocking the timing loop
+    				}));
+    			}, {
+    				// Sample is currently loading - skip this play message to avoid blocking
+    				["skipping play - sample still loading:", filename].postln;
+    			});
     		},{
+    			// Sample is cached and ready - play immediately
     			~playFromMsg.(msg,~sampleCache.at(filename));
     		});
     	},'/sampler');
+    	
+    	// Preload endpoint - loads buffers without playing them
+    	OSCFunc({ |msg|
+    		var filename = msg[1];
+    		["preload request:", filename].postln;
+    		if (~sampleCache.at(filename).isNil,{
+    			// Check if already loading this sample
+    			if (~sampleLoadingQueue.at(filename).isNil, {
+    				["preloading", filename].postln;
+    				~sampleLoadingQueue.put(filename, true);
+    				~sampleCache.put(filename, Buffer.read(s, filename, action: { |b|
+    					["preloaded", b, b.numChannels].postln;
+    					~sampleLoadingQueue.removeAt(filename);
+    				}));
+    			}, {
+    				["already loading:", filename].postln;
+    			});
+    		},{
+    			["already cached:", filename].postln;
+    		});
+    	},'/preload');
     	OSCFunc({ |msg|
     		var synthToPlay = msg[3].asString;
     		if (synthToPlay=="DX7",{

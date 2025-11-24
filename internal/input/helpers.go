@@ -1699,6 +1699,9 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 				// Initialize ticks for this track
 				m.LoadTicksLeftForTrack(track)
 
+				// Preload upcoming samples to avoid timing pauses (scan 8 rows ahead)
+				m.PreloadUpcomingSamples(track, 8)
+
 				// Emit initial row for this track
 				EmitRowDataFor(m, firstPhraseID, m.SongPlaybackRowInPhrase[track], track)
 				log.Printf("Song track %d started at row %02X, chain %02X (chain row %d), phrase %02X with %d ticks", track, startRow, chainID, firstChainRow, firstPhraseID, m.SongPlaybackTicksLeft[track])
@@ -1729,6 +1732,10 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 			m.SongPlaybackRowInPhrase[0] = FindFirstNonEmptyRowInPhraseForTrack(m, 0, 0)
 			// Initialize ticks for fallback track 0
 			m.LoadTicksLeftForTrack(0)
+			
+			// Preload upcoming samples to avoid timing pauses (scan 8 rows ahead)
+			m.PreloadUpcomingSamples(0, 8)
+			
 			EmitRowDataFor(m, 0, m.SongPlaybackRowInPhrase[0], 0)
 			log.Printf("Song track 0 fallback started at phrase 0, row %d with %d ticks", m.SongPlaybackRowInPhrase[0], m.SongPlaybackTicksLeft[0])
 		}
