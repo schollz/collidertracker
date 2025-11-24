@@ -633,9 +633,9 @@ func RenderInstrumentPhraseView(m *model.Model) string {
 		content.WriteString("\n")
 	}
 
-	// Footer with status
+	// Footer with three-line status
 	statusMsg := GetInstrumentPhraseStatusMessage(m)
-	content.WriteString(RenderFooter(m, visibleRows+1, statusMsg)) // +1 for header
+	content.WriteString(RenderFooterWithThreeLineStatus(m, visibleRows+1, statusMsg)) // +1 for header
 
 	// Apply container padding to entire content
 	return containerStyle.Render(content.String())

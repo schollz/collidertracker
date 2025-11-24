@@ -58,11 +58,30 @@ func renderViewWithCommonPattern(m *model.Model, leftHeader, rightHeader string,
 	// Render view-specific content
 	content.WriteString(renderContent(styles))
 
-	// Render footer
-	content.WriteString(RenderFooter(m, contentLines, statusMsg))
+	// Render footer with three-line status
+	content.WriteString(RenderFooterWithThreeLineStatus(m, contentLines, statusMsg))
 
 	// Apply container padding to entire content - same as working views
 	return styles.Container.Render(content.String())
+}
+
+// RenderFooterWithThreeLineStatus renders footer with three navigation status lines
+func RenderFooterWithThreeLineStatus(m *model.Model, contentLines int, helpText string) string {
+	var content strings.Builder
+
+	// Fill remaining space if terminal is larger
+	// Adjust for 3 status lines instead of 1
+	if m.TermHeight > 0 && contentLines < m.TermHeight-6 { // -6 for container padding + 3 status lines
+		for i := contentLines; i < m.TermHeight-6; i++ {
+			content.WriteString("\n")
+		}
+	}
+
+	// Split help text into three lines if needed
+	// For now, put all help text on line 2
+	content.WriteString(RenderThreeLineStatus(m, "", helpText, ""))
+
+	return content.String()
 }
 
 func getRecordingIndicator(m *model.Model) string {
@@ -162,18 +181,130 @@ func RenderHeader(m *model.Model, leftContent, rightContent string) string {
 }
 
 // RenderFooter handles the common pattern of filling remaining space and adding status
+// getNavigationInfo returns the shift-up and shift-down navigation labels for a view
+func getNavigationInfo(viewMode types.ViewMode) (shiftUp, shiftDown string) {
+	switch viewMode {
+	case types.SongView, types.ChainView, types.PhraseView:
+		return "B", "M" // Settings (BPM) and Mixer
+	case types.SettingsView:
+		return "", "S-C-P" // Only shift-down goes back
+	case types.MixerView:
+		return "S-C-P", "" // Only shift-up goes back
+	case types.RetriggerView, types.TimestrechView, types.ModulateView,
+		types.ArpeggioView, types.MidiView, types.SoundMakerView, types.DuckingView:
+		return "", "P" // These are sub-views of Phrase, shift-left goes back
+	case types.FileView:
+		return "", "P" // File browser, shift-left goes back to phrase
+	case types.FileMetadataView:
+		return "", "F" // Metadata view, shift-down goes back to file view
+	case types.WaveformView:
+		return "", "P" // Waveform view
+	default:
+		return "", ""
+	}
+}
+
+// getCurrentViewIndicator returns the S-C-P indicator with current view highlighted
+func getCurrentViewIndicator(viewMode types.ViewMode) string {
+	highlightStyle := lipgloss.NewStyle().Background(lipgloss.Color("7")).Foreground(lipgloss.Color("0"))
+	normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+
+	var s, c, p string
+
+	// Determine which is highlighted
+	switch viewMode {
+	case types.SongView:
+		s = highlightStyle.Render("S")
+		c = normalStyle.Render("C")
+		p = normalStyle.Render("P")
+	case types.ChainView:
+		s = normalStyle.Render("S")
+		c = highlightStyle.Render("C")
+		p = normalStyle.Render("P")
+	case types.PhraseView:
+		s = normalStyle.Render("S")
+		c = normalStyle.Render("C")
+		p = highlightStyle.Render("P")
+	default:
+		// For other views, show unhighlighted
+		s = normalStyle.Render("S")
+		c = normalStyle.Render("C")
+		p = normalStyle.Render("P")
+	}
+
+	return s + "-" + c + "-" + p
+}
+
+// RenderThreeLineStatus renders three navigation status lines
+func RenderThreeLineStatus(m *model.Model, helpLine1, helpLine2, helpLine3 string) string {
+	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	var content strings.Builder
+
+	shiftUp, shiftDown := getNavigationInfo(m.ViewMode)
+	scpIndicator := getCurrentViewIndicator(m.ViewMode)
+
+	// Minimum spacing between navigation indicator and help text
+	const minSpacing = 10
+
+	// Line 1: Shift-up navigation + help text
+	line1 := "  " + shiftUp
+	if helpLine1 != "" {
+		spacing := minSpacing
+		if len(line1) < minSpacing {
+			spacing = minSpacing - len(line1)
+		} else {
+			spacing = 2
+		}
+		line1 += strings.Repeat(" ", spacing) + helpLine1
+	}
+	content.WriteString(statusStyle.Render(line1))
+	content.WriteString("\n")
+
+	// Line 2: S-C-P indicator + help text
+	line2 := scpIndicator
+	if helpLine2 != "" {
+		// Calculate spacing - SCP indicator is styled so calculate raw length
+		rawSCPLen := 5 // "S-C-P" is 5 characters
+		spacing := minSpacing
+		if rawSCPLen < minSpacing {
+			spacing = minSpacing - rawSCPLen
+		} else {
+			spacing = 2
+		}
+		line2 += statusStyle.Render(strings.Repeat(" ", spacing) + helpLine2)
+	}
+	content.WriteString(line2)
+	content.WriteString("\n")
+
+	// Line 3: Shift-down navigation + help text
+	line3 := "  " + shiftDown
+	if helpLine3 != "" {
+		spacing := minSpacing
+		if len(line3) < minSpacing {
+			spacing = minSpacing - len(line3)
+		} else {
+			spacing = 2
+		}
+		line3 += strings.Repeat(" ", spacing) + helpLine3
+	}
+	content.WriteString(statusStyle.Render(line3))
+
+	return content.String()
+}
+
 func RenderFooter(m *model.Model, contentLines int, statusMsg string) string {
 	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	var content strings.Builder
 
 	// Fill remaining space if terminal is larger
-	if m.TermHeight > 0 && contentLines < m.TermHeight-4 { // -4 for container padding
-		for i := contentLines; i < m.TermHeight-4; i++ {
+	// Adjust for 3 status lines instead of 1
+	if m.TermHeight > 0 && contentLines < m.TermHeight-6 { // -6 for container padding + 3 status lines
+		for i := contentLines; i < m.TermHeight-6; i++ {
 			content.WriteString("\n")
 		}
 	}
 
-	// Status message
+	// Status message (legacy - will be replaced with three-line status)
 	content.WriteString(statusStyle.Render(statusMsg))
 
 	return content.String()
