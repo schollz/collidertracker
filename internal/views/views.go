@@ -174,46 +174,65 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	
 	var line1, line2, line3 string
 	
-	// Determine what's accessible from current view
-	var shiftUpAvailable bool
-	var shiftDownAvailable bool
+	// Determine what appears above and below the current view
+	// The logic is:
+	// - O (Options/Settings) appears above Song, Chain, Phrase, and sub-views (but not above itself or Mixer)
+	// - M (Mixer) appears below Song, Chain, Phrase, sub-views, and Options (but not below itself)
+	// - D (File Metadata) appears above File browser
+	var topLabel string
+	var bottomLabel string
 	
 	switch m.ViewMode {
 	case types.SongView:
-		shiftUpAvailable = false
-		shiftDownAvailable = true
+		// Song view: no O above, M below
+		topLabel = ""
+		bottomLabel = "M"
 		
 	case types.ChainView:
-		shiftUpAvailable = true
-		shiftDownAvailable = true
+		// Chain view: O above, M below
+		topLabel = "O"
+		bottomLabel = "M"
 		
 	case types.PhraseView:
-		shiftUpAvailable = true
-		shiftDownAvailable = true
+		// Phrase view: O above, M below
+		topLabel = "O"
+		bottomLabel = "M"
 		
 	case types.SettingsView:
-		shiftUpAvailable = false
-		shiftDownAvailable = true
+		// Settings (Options) view: nothing above, M below
+		topLabel = ""
+		bottomLabel = "M"
 		
 	case types.MixerView:
-		shiftUpAvailable = true
-		shiftDownAvailable = false
+		// Mixer view: O above, nothing below
+		topLabel = "O"
+		bottomLabel = ""
 		
-	case types.FileView, types.RetriggerView, types.TimestrechView,
-		types.ModulateView, types.ArpeggioView, types.MidiView, 
-		types.SoundMakerView, types.DuckingView:
-		shiftUpAvailable = true
-		shiftDownAvailable = false
+	case types.FileView:
+		// File browser: D (File Metadata) above, nothing below
+		topLabel = "D"
+		bottomLabel = ""
+		
+	case types.FileMetadataView:
+		// File Metadata view: nothing above, nothing below (goes back to File browser with Shift+Down)
+		topLabel = ""
+		bottomLabel = ""
+		
+	case types.RetriggerView, types.TimestrechView, types.ModulateView, 
+		types.ArpeggioView, types.MidiView, types.SoundMakerView, types.DuckingView:
+		// Sub-views from Phrase: O above, M below
+		topLabel = "O"
+		bottomLabel = "M"
 		
 	default:
-		shiftUpAvailable = false
-		shiftDownAvailable = false
+		topLabel = ""
+		bottomLabel = ""
 	}
 	
 	// Build the 3 lines
-	// Line 1: Options (O) if available from current view
-	if shiftUpAvailable {
-		line1 = "  " + dimStyle.Render("O")
+	// Line 1: Top label (O, D, or empty)
+	if topLabel != "" {
+		line1 = "  " + dimStyle.Render(topLabel)
 	} else {
 		line1 = ""
 	}
@@ -221,9 +240,9 @@ func RenderNavigationLines(m *model.Model, helpText string) string {
 	// Line 2: Current view path (S-C-P or variations)
 	line2 = buildNavigationChain(m, highlightStyle, dimStyle, helpText)
 	
-	// Line 3: Mixer (M) if available from current view
-	if shiftDownAvailable {
-		line3 = "  " + dimStyle.Render("M")
+	// Line 3: Bottom label (M or empty)
+	if bottomLabel != "" {
+		line3 = "  " + dimStyle.Render(bottomLabel)
 	} else {
 		line3 = ""
 	}
@@ -289,6 +308,10 @@ func buildNavigationChain(m *model.Model, highlightStyle, dimStyle lipgloss.Styl
 	case types.MixerView:
 		// Just M highlighted (standalone)
 		chain = highlightStyle.Render("M")
+		
+	case types.FileMetadataView:
+		// S-C-P-F-D with D highlighted (File Metadata from File browser)
+		chain = dimStyle.Render("S-C-P-F-") + highlightStyle.Render("D")
 		
 	default:
 		chain = highlightStyle.Render("?")
