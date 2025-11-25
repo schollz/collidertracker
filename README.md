@@ -23,7 +23,6 @@ This is a music tracker designed to be used with any terminal (Linux, macOS, Win
 ## Prerequisites
 
 - **SuperCollider** (required; extensions are checked at launch). Download [here](https://supercollider.github.io/downloads.html).
-- **SuperCollider extensions** (required): Download [here](https://supercollider.github.io/sc3-plugins/)
 - **collidertracker** binary. See installation options below.
 
 ### Automatic Plugin Downloads
@@ -39,6 +38,8 @@ The following extensions are automatically downloaded:
 - **PortedPlugins** ([schollz/portedplugins](https://github.com/schollz/portedplugins)) - Audio effects including Fverb and AnalogTape
 - **mi-UGens** ([v7b1/mi-UGens](https://github.com/v7b1/mi-UGens)) - Mutable Instruments synthesizer modules including MiBraids
 - **Open303** ([schollz/open303](https://github.com/schollz/open303)) - TB-303 bassline synthesizer emulator
+- **Juno60** ([schollz/juno-60](https://github.com/schollz/juno-60)) - Roland Juno-60 analog polysynth emulator with chorus
+- **SC3 Plugins** ([supercollider/sc3-plugins](https://github.com/supercollider/sc3-plugins)) - Community collection of SuperCollider plugins including FM7
 
 ### Checking the SuperCollider Installation Worked
 
@@ -587,9 +588,9 @@ To completely remove all ColliderTracker-related data from your system:
 
 ColliderTracker automatically downloads SuperCollider extensions to the following locations:
 
-- **macOS**: Remove `~/Library/Application Support/SuperCollider/Extensions/PortedPlugins/`, `~/Library/Application Support/SuperCollider/Extensions/mi-UGens/`, and `~/Library/Application Support/SuperCollider/Extensions/Open303/`
-- **Linux**: Remove `~/.local/share/SuperCollider/Extensions/PortedPlugins/`, `~/.local/share/SuperCollider/Extensions/mi-UGens/`, and `~/.local/share/SuperCollider/Extensions/Open303/`
-- **Windows**: Remove `%LOCALAPPDATA%/SuperCollider/Extensions/PortedPlugins/`, `%LOCALAPPDATA%/SuperCollider/Extensions/mi-UGens/`, and `%LOCALAPPDATA%/SuperCollider/Extensions/Open303/`
+- **macOS**: Remove `~/Library/Application Support/SuperCollider/Extensions/PortedPlugins/`, `~/Library/Application Support/SuperCollider/Extensions/mi-UGens/`, `~/Library/Application Support/SuperCollider/Extensions/Open303/`, `~/Library/Application Support/SuperCollider/Extensions/Juno60/`, and `~/Library/Application Support/SuperCollider/Extensions/SC3plugins/`
+- **Linux**: Remove `~/.local/share/SuperCollider/Extensions/PortedPlugins/`, `~/.local/share/SuperCollider/Extensions/mi-UGens/`, `~/.local/share/SuperCollider/Extensions/Open303/`, `~/.local/share/SuperCollider/Extensions/Juno60/`, and `~/.local/share/SuperCollider/Extensions/SC3plugins/`
+- **Windows**: Remove `%LOCALAPPDATA%/SuperCollider/Extensions/PortedPlugins/`, `%LOCALAPPDATA%/SuperCollider/Extensions/mi-UGens/`, `%LOCALAPPDATA%/SuperCollider/Extensions/Open303/`, `%LOCALAPPDATA%/SuperCollider/Extensions/Juno60/`, and `%LOCALAPPDATA%/SuperCollider/Extensions/SC3plugins/`
 
 **Note**: These extensions may also be used by other SuperCollider applications. Only remove them if you're sure they're not needed by other software.
 
