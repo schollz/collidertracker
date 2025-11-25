@@ -1424,6 +1424,12 @@ func rowDurationMicroseconds(m *model.Model) float64 {
 	ticksPerSecond := beatsPerSecond * float64(m.PPQ)
 	baseUs := 1000000.0 / ticksPerSecond
 
+	// For Chain/Phrase playback modes with tick-based timing, always return base tick duration
+	// since we now manage DT durations with PlaybackTicksLeft counter
+	if m.PlaybackMode == types.ChainView || m.PlaybackMode == types.PhraseView {
+		return baseUs
+	}
+
 	p := m.PlaybackPhrase
 	r := m.PlaybackRow
 	// Bounds checks (255 x 255 grid)
@@ -1442,6 +1448,7 @@ func rowDurationMicroseconds(m *model.Model) float64 {
 		return baseUs
 	} else {
 		// DT > 0: hold for DT number of ticks
+		// This path is only used for Song mode or non-playback contexts
 		return baseUs * float64(dtRaw)
 	}
 }
@@ -1797,9 +1804,17 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 			m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 		}
 
+		// Initialize ticks for chain playback
+		phrasesData := GetPhrasesDataForTrack(m, m.CurrentTrack)
+		if m.PlaybackPhrase >= 0 && m.PlaybackPhrase < 255 && m.PlaybackRow >= 0 && m.PlaybackRow < 255 {
+			dtValue := (*phrasesData)[m.PlaybackPhrase][m.PlaybackRow][types.ColDeltaTime]
+			m.PlaybackTicksLeft = dtValue
+			log.Printf("DEBUG_CHAIN: Initialized PlaybackTicksLeft=%d for phrase %d row %d", m.PlaybackTicksLeft, m.PlaybackPhrase, m.PlaybackRow)
+		}
+
 		// Emit the initial row
 		DebugLogRowEmission(m)
-		log.Printf("Chain playback started at chain %d, chain row %d, phrase %d, row %d", m.PlaybackChain, m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow)
+		log.Printf("Chain playback started at chain %d, chain row %d, phrase %d, row %d with %d ticks", m.PlaybackChain, m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow, m.PlaybackTicksLeft)
 
 		// Start the playback clock NOW, after the initial note has been emitted
 		// Set tick count to 1 because the initial emission represents tick 0
@@ -1824,9 +1839,17 @@ func startPlaybackWithConfig(m *model.Model, config PlaybackConfig) tea.Cmd {
 			log.Printf("DEBUG: FindFirstNonEmptyRowInPhrase returned row %d for track %d", m.PlaybackRow, m.CurrentTrack)
 		}
 
+		// Initialize ticks for phrase playback
+		phrasesData := GetPhrasesDataForTrack(m, m.CurrentTrack)
+		if m.PlaybackPhrase >= 0 && m.PlaybackPhrase < 255 && m.PlaybackRow >= 0 && m.PlaybackRow < 255 {
+			dtValue := (*phrasesData)[m.PlaybackPhrase][m.PlaybackRow][types.ColDeltaTime]
+			m.PlaybackTicksLeft = dtValue
+			log.Printf("DEBUG_PHRASE: Initialized PlaybackTicksLeft=%d for phrase %d row %d", m.PlaybackTicksLeft, m.PlaybackPhrase, m.PlaybackRow)
+		}
+
 		// Emit the initial row
 		DebugLogRowEmission(m)
-		log.Printf("Phrase playback started at phrase %d, row %d", m.PlaybackPhrase, m.PlaybackRow)
+		log.Printf("Phrase playback started at phrase %d, row %d with %d ticks", m.PlaybackPhrase, m.PlaybackRow, m.PlaybackTicksLeft)
 
 		// Start the playback clock NOW, after the initial note has been emitted
 		// Set tick count to 1 because the initial emission represents tick 0
@@ -1954,9 +1977,17 @@ func startPlaybackWithConfigFromCtrlSpace(m *model.Model, config PlaybackConfig)
 				m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 			}
 
+			// Initialize ticks for chain playback
+			phrasesData := GetPhrasesDataForTrack(m, m.CurrentTrack)
+			if m.PlaybackPhrase >= 0 && m.PlaybackPhrase < 255 && m.PlaybackRow >= 0 && m.PlaybackRow < 255 {
+				dtValue := (*phrasesData)[m.PlaybackPhrase][m.PlaybackRow][types.ColDeltaTime]
+				m.PlaybackTicksLeft = dtValue
+				log.Printf("DEBUG_CHAIN: Initialized PlaybackTicksLeft=%d for phrase %d row %d (Ctrl+Space)", m.PlaybackTicksLeft, m.PlaybackPhrase, m.PlaybackRow)
+			}
+
 			// Emit the initial row
 			DebugLogRowEmission(m)
-			log.Printf("Chain playback started (Ctrl+Space): chain %d, phrase %d, row %d", m.PlaybackChain, m.PlaybackPhrase, m.PlaybackRow)
+			log.Printf("Chain playback started (Ctrl+Space): chain %d, phrase %d, row %d with %d ticks", m.PlaybackChain, m.PlaybackPhrase, m.PlaybackRow, m.PlaybackTicksLeft)
 		} else {
 			// Phrase playback mode
 			m.PlaybackPhrase = config.Phrase
@@ -1968,9 +1999,17 @@ func startPlaybackWithConfigFromCtrlSpace(m *model.Model, config PlaybackConfig)
 				m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 			}
 
+			// Initialize ticks for phrase playback
+			phrasesData := GetPhrasesDataForTrack(m, m.CurrentTrack)
+			if m.PlaybackPhrase >= 0 && m.PlaybackPhrase < 255 && m.PlaybackRow >= 0 && m.PlaybackRow < 255 {
+				dtValue := (*phrasesData)[m.PlaybackPhrase][m.PlaybackRow][types.ColDeltaTime]
+				m.PlaybackTicksLeft = dtValue
+				log.Printf("DEBUG_PHRASE: Initialized PlaybackTicksLeft=%d for phrase %d row %d (Ctrl+Space)", m.PlaybackTicksLeft, m.PlaybackPhrase, m.PlaybackRow)
+			}
+
 			// Emit the initial row
 			DebugLogRowEmission(m)
-			log.Printf("Phrase playback started (Ctrl+Space): phrase %d, row %d", m.PlaybackPhrase, m.PlaybackRow)
+			log.Printf("Phrase playback started (Ctrl+Space): phrase %d, row %d with %d ticks", m.PlaybackPhrase, m.PlaybackRow, m.PlaybackTicksLeft)
 		}
 
 		// Start the playback clock NOW, after the initial note has been emitted

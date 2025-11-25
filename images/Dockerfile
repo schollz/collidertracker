@@ -8,6 +8,8 @@ RUN apt-get update && \
     build-essential \
     cmake \
     git \
+    jackd2 \
+    libjack-jackd2-dev \
     libsndfile1-dev \
     libfftw3-dev \
     libxt-dev \
@@ -18,30 +20,30 @@ RUN apt-get update && \
     pkg-config \
     libncurses5-dev \
     rtkit \
-    darkice \
-    icecast2 \
     alsa-utils \
     lame \
     nano \
     dbus \
     dbus-user-session \
     ca-certificates \
-    python3 python-is-python3 && \
+    python3 python-is-python3 \
+    sudo && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN cd /tmp && \
-    git clone https://github.com/jackaudio/jack2.git && \
-    cd jack2 && \
-    git checkout v1.9.22 && \
-    # Apply patch to fix deprecated 'imp' usage in Context.py
-    sed -i 's/import os, re, imp, sys/import os, re, sys, types/' waflib/Context.py && \
-    sed -i 's/module = imp.new_module(WSCRIPT_FILE)/module = types.ModuleType(WSCRIPT_FILE)/' waflib/Context.py && \
-    chmod +x waf && \
-    ./waf configure --prefix=/usr && \
-    ./waf && \
-    ./waf install && \
-    cd /tmp && rm -rf jack2 && \
-    ldconfig
+RUN jackd --version
+# RUN cd /tmp && \
+#     git clone https://github.com/jackaudio/jack2.git && \
+#     cd jack2 && \
+#     git checkout v1.9.22 && \
+#     # Apply patch to fix deprecated 'imp' usage in Context.py
+#     sed -i 's/import os, re, imp, sys/import os, re, sys, types/' waflib/Context.py && \
+#     sed -i 's/module = imp.new_module(WSCRIPT_FILE)/module = types.ModuleType(WSCRIPT_FILE)/' waflib/Context.py && \
+#     chmod +x waf && \
+#     ./waf configure --prefix=/usr && \
+#     ./waf && \
+#     ./waf install && \
+#     cd /tmp && rm -rf jack2 && \
+#     ldconfig
 
 # Build SuperCollider 3.14.1 from source (headless)
 RUN cd /tmp && \
@@ -73,6 +75,8 @@ RUN echo "@audio   -  rtprio     95" >> /etc/security/limits.conf && \
     echo "@audio   -  memlock    unlimited" >> /etc/security/limits.conf && \
     echo "@audio   -  nice      -10" >> /etc/security/limits.conf
 
+RUN /etc/init.d/dbus start
+
 COPY icecast.xml /etc/icecast2/icecast.xml
 COPY darkice.cfg /etc/darkice.cfg
 COPY autostart.scd /home/scuser/autostart.scd
@@ -82,4 +86,3 @@ USER scuser
 
 EXPOSE 8000 8001
 ENTRYPOINT ["/start.sh"]
-

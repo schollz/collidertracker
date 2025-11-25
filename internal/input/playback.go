@@ -621,7 +621,22 @@ func AdvancePlayback(m *model.Model) {
 			log.Printf("All tracks inactive - stopped playback")
 		}
 	} else if m.PlaybackMode == types.ChainView {
-		// Chain playback mode - advance through phrases in sequence
+		// Chain playback mode - advance through phrases in sequence with tick-based timing
+		log.Printf("DEBUG_CHAIN: Chain playback advancing - ticksLeft=%d", m.PlaybackTicksLeft)
+
+		// Decrement ticks if > 0
+		if m.PlaybackTicksLeft > 0 {
+			m.PlaybackTicksLeft--
+			log.Printf("Chain playback: %d ticks remaining", m.PlaybackTicksLeft)
+		}
+
+		// Only advance when ticks reach 0
+		if m.PlaybackTicksLeft > 0 {
+			return
+		}
+
+		log.Printf("Chain playback: ticks exhausted, advancing to next row")
+
 		// Find next row with playback enabled (unified DT-based playback)
 		phrasesData := GetPhrasesDataForTrack(m, m.CurrentTrack)
 
@@ -632,8 +647,10 @@ func AdvancePlayback(m *model.Model) {
 				dtValue := (*phrasesData)[m.PlaybackPhrase][i][types.ColDeltaTime]
 				if IsRowPlayable(dtValue) {
 					m.PlaybackRow = i
+					// Load ticks for the new row
+					m.PlaybackTicksLeft = dtValue
 					DebugLogRowEmission(m)
-					log.Printf("Chain playback advanced from row %d to %d", oldRow, m.PlaybackRow)
+					log.Printf("Chain playback advanced from row %d to %d with %d ticks", oldRow, m.PlaybackRow, m.PlaybackTicksLeft)
 					return
 				}
 			}
@@ -648,10 +665,15 @@ func AdvancePlayback(m *model.Model) {
 				m.PlaybackPhrase = phraseID
 				m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 
+				// Load ticks for the new row
+				if m.PlaybackPhrase >= 0 && m.PlaybackPhrase < 255 && m.PlaybackRow >= 0 && m.PlaybackRow < 255 {
+					dtValue := (*phrasesData)[m.PlaybackPhrase][m.PlaybackRow][types.ColDeltaTime]
+					m.PlaybackTicksLeft = dtValue
+					DebugLogRowEmission(m)
+					log.Printf("Chain playback moved to chain row %d, phrase %d, row %d with %d ticks", m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow, m.PlaybackTicksLeft)
+				}
 				// Reset inheritance values when changing phrases would be handled in main
 
-				DebugLogRowEmission(m)
-				log.Printf("Chain playback moved to chain row %d, phrase %d, row %d", m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow)
 				return
 			}
 		}
@@ -664,10 +686,15 @@ func AdvancePlayback(m *model.Model) {
 				m.PlaybackPhrase = phraseID
 				m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
 
+				// Load ticks for the new row
+				if m.PlaybackPhrase >= 0 && m.PlaybackPhrase < 255 && m.PlaybackRow >= 0 && m.PlaybackRow < 255 {
+					dtValue := (*phrasesData)[m.PlaybackPhrase][m.PlaybackRow][types.ColDeltaTime]
+					m.PlaybackTicksLeft = dtValue
+					DebugLogRowEmission(m)
+					log.Printf("Chain playback looped back to chain row %d, phrase %d, row %d with %d ticks", m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow, m.PlaybackTicksLeft)
+				}
 				// Reset inheritance values when changing phrases would be handled in main
 
-				DebugLogRowEmission(m)
-				log.Printf("Chain playback looped back to chain row %d, phrase %d, row %d", m.PlaybackChainRow, m.PlaybackPhrase, m.PlaybackRow)
 				return
 			}
 		}
@@ -676,7 +703,22 @@ func AdvancePlayback(m *model.Model) {
 		log.Printf("Chain playback stopped - no valid phrases found in chain %d", m.PlaybackChain)
 		return
 	} else {
-		// Phrase-only playback mode
+		// Phrase-only playback mode with tick-based timing
+		log.Printf("DEBUG_PHRASE: Phrase playback advancing - ticksLeft=%d", m.PlaybackTicksLeft)
+
+		// Decrement ticks if > 0
+		if m.PlaybackTicksLeft > 0 {
+			m.PlaybackTicksLeft--
+			log.Printf("Phrase playback: %d ticks remaining", m.PlaybackTicksLeft)
+		}
+
+		// Only advance when ticks reach 0
+		if m.PlaybackTicksLeft > 0 {
+			return
+		}
+
+		log.Printf("Phrase playback: ticks exhausted, advancing to next row")
+
 		// Find next row with playback enabled (unified DT-based playback)
 		phrasesData := GetPhrasesDataForTrack(m, m.CurrentTrack)
 		for i := m.PlaybackRow + 1; i < 255; i++ {
@@ -684,16 +726,23 @@ func AdvancePlayback(m *model.Model) {
 			dtValue := (*phrasesData)[m.PlaybackPhrase][i][types.ColDeltaTime]
 			if IsRowPlayable(dtValue) {
 				m.PlaybackRow = i
+				// Load ticks for the new row
+				m.PlaybackTicksLeft = dtValue
 				DebugLogRowEmission(m)
-				log.Printf("Phrase playback advanced from row %d to %d", oldRow, m.PlaybackRow)
+				log.Printf("Phrase playback advanced from row %d to %d with %d ticks", oldRow, m.PlaybackRow, m.PlaybackTicksLeft)
 				return
 			}
 		}
 
 		// Loop back to beginning of phrase
 		m.PlaybackRow = FindFirstNonEmptyRowInPhrase(m, m.PlaybackPhrase)
-		DebugLogRowEmission(m)
-		log.Printf("Phrase playback looped from row %d back to %d", oldRow, m.PlaybackRow)
+		// Load ticks for the looped row
+		if m.PlaybackPhrase >= 0 && m.PlaybackPhrase < 255 && m.PlaybackRow >= 0 && m.PlaybackRow < 255 {
+			dtValue := (*phrasesData)[m.PlaybackPhrase][m.PlaybackRow][types.ColDeltaTime]
+			m.PlaybackTicksLeft = dtValue
+			DebugLogRowEmission(m)
+			log.Printf("Phrase playback looped from row %d back to %d with %d ticks", oldRow, m.PlaybackRow, m.PlaybackTicksLeft)
+		}
 	}
 }
 
