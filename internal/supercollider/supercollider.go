@@ -624,6 +624,11 @@ func HasRequiredExtensions() bool {
 		return false
 	}
 
+	// Also check for SC3 plugins
+	if !hasSC3Plugins() {
+		return false
+	}
+
 	return true
 }
 
@@ -795,6 +800,20 @@ func DownloadRequiredExtensions() error {
 		fmt.Println("Juno60 downloaded successfully")
 	}
 
+	// Check for SC3 plugins (check for MoogLadder.schelp)
+	if !hasSC3Plugins() {
+		fmt.Println("Downloading SC3 plugins...")
+		downloadURL := getSC3PluginsURL()
+		if downloadURL == "" {
+			return fmt.Errorf("unsupported platform for SC3 plugins: %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
+
+		if err := downloadAndExtract(downloadURL, extensionDir); err != nil {
+			return fmt.Errorf("failed to download SC3 plugins: %v", err)
+		}
+		fmt.Println("SC3 plugins downloaded successfully")
+	}
+
 	if HasRequiredExtensions() {
 		fmt.Println("All required extensions are now available")
 		return nil
@@ -911,6 +930,56 @@ func getJuno60InstallDir() string {
 		}
 	}
 	return ""
+}
+
+func getSC3PluginsURL() string {
+	// Using version 3.13.0 from https://github.com/supercollider/sc3-plugins/releases/tag/Version-3.13.0
+	const baseURL = "https://github.com/supercollider/sc3-plugins/releases/download/Version-3.13.0/"
+
+	switch runtime.GOOS {
+	case "linux":
+		return baseURL + "sc3-plugins-3.13.0-Linux-x64.zip"
+	case "darwin":
+		// Universal binary for macOS (x64/Intel and arm64/Apple bundled together)
+		return baseURL + "sc3-plugins-3.13.0-macOS.zip"
+	case "windows":
+		if runtime.GOARCH == "386" {
+			return baseURL + "sc3-plugins-3.13.0-Windows-32bit.zip"
+		}
+		return baseURL + "sc3-plugins-3.13.0-Windows-64bit.zip"
+	}
+	return ""
+}
+
+func hasSC3Plugins() bool {
+	// Check for MoogLadder.schelp file recursively in the Extensions directory
+	// This is the indicator file for SC3 plugins as mentioned in the issue
+	extensionDirs := getSuperColliderExtensionDirs()
+
+	for _, dir := range extensionDirs {
+		// Check direct file path
+		if fileExists(filepath.Join(dir, "MoogLadder.schelp")) {
+			return true
+		}
+
+		// Check in subdirectories recursively
+		found := false
+		filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if !info.IsDir() && info.Name() == "MoogLadder.schelp" {
+				found = true
+				return filepath.SkipDir
+			}
+			return nil
+		})
+
+		if found {
+			return true
+		}
+	}
+	return false
 }
 
 func hasOpen303() bool {

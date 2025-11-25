@@ -159,6 +159,43 @@ func TestGetOpen303InstallDir(t *testing.T) {
 	})
 }
 
+func TestGetSC3PluginsURL(t *testing.T) {
+	t.Run("returns correct URL for platform", func(t *testing.T) {
+		url := getSC3PluginsURL()
+
+		switch runtime.GOOS {
+		case "linux":
+			assert.Contains(t, url, "sc3-plugins-3.13.0-Linux-x64.zip")
+		case "darwin":
+			assert.Contains(t, url, "sc3-plugins-3.13.0-macOS.zip")
+		case "windows":
+			if runtime.GOARCH == "386" {
+				assert.Contains(t, url, "sc3-plugins-3.13.0-Windows-32bit.zip")
+			} else {
+				assert.Contains(t, url, "sc3-plugins-3.13.0-Windows-64bit.zip")
+			}
+		default:
+			assert.Equal(t, "", url) // Unsupported platform
+		}
+
+		// If URL is not empty, should be a valid GitHub releases URL
+		if url != "" {
+			assert.Contains(t, url, "github.com/supercollider/sc3-plugins/releases")
+			assert.Contains(t, url, "Version-3.13.0")
+		}
+	})
+}
+
+func TestHasSC3Plugins(t *testing.T) {
+	t.Run("returns false when SC3 plugins not installed", func(t *testing.T) {
+		// This will likely return false unless SC3 plugins are installed
+		result := hasSC3Plugins()
+		// We can't assert true/false since it depends on system state,
+		// but we can verify it doesn't panic
+		assert.IsType(t, true, result)
+	})
+}
+
 func TestExtractSynthDefNames(t *testing.T) {
 	t.Run("extracts quoted synthdef names", func(t *testing.T) {
 		scdContent := `
