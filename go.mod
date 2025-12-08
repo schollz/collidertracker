@@ -14,7 +14,7 @@ require (
 	github.com/schollz/audiomorph v1.1.0
 	github.com/schollz/gowaveform v0.2.0
 	github.com/schollz/onsets v0.2.0
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.10.0
 	gitlab.com/gomidi/midi/v2 v2.3.16
 )
